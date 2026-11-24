@@ -1,4 +1,936 @@
-async function postToSheets(payload) {
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Manager Stock Opname — KDKMP</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    :root {
+      --primary: #0f766e;
+      --primary-dark: #115e59;
+      --accent: #0284c7;
+      --danger: #dc2626;
+      --danger-light: #fee2e2;
+      --warning: #d97706;
+      --warning-light: #fef3c7;
+      --success: #16a34a;
+      --success-light: #dcfce7;
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #cbd5e1;
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.4;
+    }
+
+    #lockScreen {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(135deg, #0f172a 0%, #134e4a 100%);
+      z-index: 999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .lock-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 24px;
+      width: 100%;
+      max-width: 370px;
+      text-align: center;
+      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.35);
+    }
+
+    .pin-input {
+      width: 100%;
+      padding: 12px;
+      font-size: 1.5rem;
+      text-align: center;
+      letter-spacing: 8px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 12px;
+      font-weight: 700;
+    }
+
+    header {
+      background: linear-gradient(135deg, #0f172a 0%, #0f766e 100%);
+      color: #fff;
+      padding: 12px 18px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+    }
+
+    .brand h1 { margin: 0; font-size: 1.08rem; }
+    .brand small { display: block; font-size: 0.75rem; color: #99f6e4; }
+
+    .sync-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      background: rgba(255,255,255,0.15);
+      color: #fff;
+    }
+
+    .nav-tabs {
+      display: flex;
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+      padding: 0 12px;
+      gap: 4px;
+      overflow-x: auto;
+    }
+
+    .nav-tab {
+      padding: 12px 14px;
+      border: none;
+      background: none;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      white-space: nowrap;
+    }
+
+    .nav-tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+
+    .container { max-width: 1400px; margin: 0 auto; padding: 14px; }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    @media (max-width: 900px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+
+    .kpi-box {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+    }
+    .kpi-box span { display: block; font-size: 0.72rem; color: var(--muted); font-weight: 700; text-transform: uppercase; }
+    .kpi-box strong { font-size: 1.1rem; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 9px 14px;
+      border-radius: 9px;
+      border: 1px solid transparent;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-accent { background: var(--accent); color: #fff; }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-dark { background: #1e293b; color: #fff; }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-outline { background: #fff; border-color: var(--border); color: var(--text); }
+    .btn-sm { padding: 6px 10px; font-size: 0.78rem; }
+
+    .toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+
+    .input-ctrl {
+      padding: 9px 11px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.88rem;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      max-height: 60vh;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    thead { background: #f1f5f9; position: sticky; top: 0; z-index: 5; }
+    th, td { padding: 9px 10px; text-align: left; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
+    th { font-size: 0.75rem; text-transform: uppercase; color: #334155; }
+
+    .thumb-img {
+      width: 44px;
+      height: 44px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #f8fafc;
+      display: block;
+    }
+
+    .thumb-empty {
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      border: 1px dashed var(--border);
+      background: #f8fafc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      color: #94a3b8;
+    }
+
+    .sku-tag {
+      background: #e2e8f0;
+      font-family: monospace;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 5px;
+      font-size: 0.8rem;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.75rem;
+    }
+    .badge-gray { background: #e2e8f0; color: #475569; }
+    .badge-green { background: var(--success-light); color: var(--success); }
+    .badge-red { background: var(--danger-light); color: var(--danger); }
+    .badge-amber { background: var(--warning-light); color: var(--warning); }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 850px) { .grid-2 { grid-template-columns: 1fr; } }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @media (max-width: 550px) { .form-grid { grid-template-columns: 1fr; } }
+
+    .form-group label { display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px; color: #334155; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.88rem;
+    }
+
+    .photo-upload-box {
+      border: 1.5px dashed #94a3b8;
+      border-radius: 10px;
+      padding: 10px;
+      background: #f8fafc;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .qr-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .qr-card {
+      border: 1.5px dashed #64748b;
+      border-radius: 10px;
+      padding: 10px;
+      text-align: center;
+      background: #fff;
+    }
+    .qr-card .qr-box { display: flex; justify-content: center; margin: 6px 0; }
+
+    /* MODAL BERITA ACARA */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.7);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 14px;
+    }
+    .modal-backdrop.open { display: flex; }
+
+    .ba-modal-box {
+      background: #fff;
+      border-radius: 14px;
+      width: 100%;
+      max-width: 960px;
+      max-height: 92vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35);
+    }
+
+    .ba-modal-top {
+      padding: 14px 18px;
+      background: #f8fafc;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .ba-controls {
+      padding: 12px 18px;
+      background: #f1f5f9;
+      border-bottom: 1px solid var(--border);
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    @media (max-width: 768px) { .ba-controls { grid-template-columns: 1fr 1fr; } }
+
+    .ba-scroll-area {
+      padding: 20px;
+      overflow-y: auto;
+      background: #cbd5e1;
+      flex: 1;
+    }
+
+    /* KERTAS A4 BERITA ACARA */
+    .ba-paper {
+      background: #fff;
+      max-width: 210mm;
+      margin: 0 auto;
+      padding: 16mm 16mm 18mm 16mm;
+      color: #000;
+      font-family: "Times New Roman", Times, Georgia, serif;
+      font-size: 11.5pt;
+      line-height: 1.45;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+    }
+
+    .ba-kop {
+      text-align: center;
+      border-bottom: 3px double #000;
+      padding-bottom: 8px;
+      margin-bottom: 14px;
+    }
+    .ba-kop h2 { margin: 0; font-size: 14pt; text-transform: uppercase; letter-spacing: 0.5px; }
+    .ba-kop h3 { margin: 2px 0; font-size: 12.5pt; text-transform: uppercase; }
+    .ba-kop p { margin: 2px 0 0; font-size: 10pt; }
+
+    .ba-title-block {
+      text-align: center;
+      margin: 12px 0 14px;
+    }
+    .ba-title-block u { font-weight: bold; font-size: 12.5pt; letter-spacing: 0.4px; }
+    .ba-title-block div { font-size: 10.5pt; margin-top: 2px; }
+
+    .ba-meta-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 8px 0 12px;
+      font-size: 11pt;
+    }
+    .ba-meta-table td {
+      border: none;
+      padding: 2px 4px;
+      vertical-align: top;
+    }
+
+    .ba-summary-box {
+      border: 1px solid #000;
+      padding: 8px 12px;
+      margin: 10px 0 14px;
+      background: #f9fafb;
+      font-size: 10.5pt;
+    }
+
+    .ba-data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0 16px;
+      font-size: 9.5pt;
+    }
+    .ba-data-table th, .ba-data-table td {
+      border: 1px solid #000;
+      padding: 5px 6px;
+      text-align: left;
+    }
+    .ba-data-table th {
+      background: #e5e7eb;
+      font-weight: bold;
+      text-align: center;
+    }
+    .ba-data-table tr { page-break-inside: avoid; }
+    .ba-data-table td.num { text-align: right; }
+    .ba-data-table td.ctr { text-align: center; }
+
+    .ba-sign-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-top: 24px;
+      text-align: center;
+      font-size: 10.5pt;
+      page-break-inside: avoid;
+    }
+
+    .ba-sign-space { height: 62px; }
+
+    .toast {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      background: #0f172a; color: #fff; padding: 10px 18px; border-radius: 999px;
+      font-size: 0.88rem; font-weight: 600; z-index: 300; opacity: 0; pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    .toast.show { opacity: 1; }
+
+    /* PRINT STYLES — HILANGKAN HEADER/FOOTER BROWSER & DUKUNG MULTI-HALAMAN */
+    @page {
+      size: A4 portrait;
+      margin: 0;
+    }
+
+    @media print {
+      body { background: #fff !important; margin: 0 !important; padding: 0 !important; }
+      .no-print, #lockScreen, header, .nav-tabs, .toast { display: none !important; }
+
+      body.print-ba .container { display: none !important; }
+      body.print-ba #baModal {
+        display: block !important;
+        position: static !important;
+        background: none !important;
+        padding: 0 !important;
+      }
+      body.print-ba .ba-modal-box {
+        box-shadow: none !important;
+        max-width: 100% !important;
+        max-height: none !important;
+        border-radius: 0 !important;
+        overflow: visible !important;
+      }
+      body.print-ba .ba-modal-top,
+      body.print-ba .ba-controls {
+        display: none !important;
+      }
+      body.print-ba .ba-scroll-area {
+        padding: 0 !important;
+        background: #fff !important;
+        overflow: visible !important;
+      }
+      body.print-ba #baPaperDocument {
+        position: static !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 15mm 16mm !important;
+        box-shadow: none !important;
+      }
+
+      body.print-qr #baModal,
+      body.print-qr #tab-audit,
+      body.print-qr #tab-settings { display: none !important; }
+      body.print-qr .container { max-width: 100% !important; padding: 10mm !important; }
+      body.print-qr .grid-2 { display: block !important; }
+      body.print-qr .card { border: none !important; padding: 0 !important; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="lockScreen">
+  <div class="lock-card">
+    <div style="font-size:2rem; margin-bottom:6px;">🔐</div>
+    <h2>Portal Manager Stock Opname</h2>
+    <p>Terhubung ke Google Sheets gerai.<br/>PIN default: <b>1234</b></p>
+    <input type="password" id="loginPin" class="pin-input" inputmode="numeric" maxlength="6" placeholder="••••" onkeydown="if(event.key==='Enter') unlockDashboard()" />
+    <button id="loginBtn" class="btn btn-primary" style="width:100%; height:46px;" onclick="unlockDashboard()">Masuk & Sinkronkan Sheets</button>
+  </div>
+</div>
+
+<header>
+  <div class="brand">
+    <h1 id="headerTitle">🛡️ Manager Stock Opname — KDKMP Selagedang</h1>
+    <small id="headerSubtitle">Database Google Sheets Live • Kec. Cibeber, Kab. Cianjur | Manager: Abdurrahman</small>
+  </div>
+  <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+    <span id="syncStatus" class="sync-pill">🟢 Terhubung Sheets</span>
+    <button id="refreshBtn" class="btn btn-accent btn-sm" onclick="fetchCloudData(true)">🔄 Refresh Live</button>
+    <button class="btn btn-danger btn-sm" onclick="lockDashboard()">🔒 Kunci</button>
+  </div>
+</header>
+
+<nav class="nav-tabs">
+  <button class="nav-tab active" onclick="switchTab('audit', this)">1. Audit Selisih Real-Time</button>
+  <button class="nav-tab" onclick="switchTab('master', this)">2. Master Produk, Foto & QR</button>
+  <button class="nav-tab" onclick="switchTab('settings', this)">3. Profil KDKMP, Tim & Log</button>
+</nav>
+
+<div class="container">
+
+  <!-- TAB 1: AUDIT REAL-TIME -->
+  <div id="tab-audit" class="tab-pane active">
+    <div class="kpi-grid">
+      <div class="kpi-box">
+        <span>Total SKU</span>
+        <strong id="kpiTotal">0</strong>
+      </div>
+      <div class="kpi-box">
+        <span>Sudah Dihitung</span>
+        <strong id="kpiProgress">0 / 0</strong>
+      </div>
+      <div class="kpi-box">
+        <span>Cocok (Selisih 0)</span>
+        <strong id="kpiMatch" style="color:var(--success);">0</strong>
+      </div>
+      <div class="kpi-box">
+        <span>Item Selisih</span>
+        <strong id="kpiDiffCount" style="color:var(--danger);">0</strong>
+      </div>
+      <div class="kpi-box">
+        <span>Selisih Rupiah (HPP)</span>
+        <strong id="kpiDiffRp">Rp 0</strong>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="toolbar">
+        <input type="text" id="auditSearch" class="input-ctrl" style="flex:1; min-width:180px;" placeholder="Cari SKU, nama, rak, atau petugas..." oninput="renderAuditTable()" />
+        <select id="auditZoneFilter" class="input-ctrl" onchange="renderAuditTable()">
+          <option value="ALL">Semua Zona</option>
+          <option value="Subsidi">Subsidi</option>
+          <option value="Sembako">Sembako</option>
+          <option value="Pertanian">Pertanian</option>
+          <option value="Lainnya">Lainnya</option>
+        </select>
+        <select id="auditStatusFilter" class="input-ctrl" onchange="renderAuditTable()">
+          <option value="ALL">Semua Status</option>
+          <option value="DIFF">Hanya Yang Selisih</option>
+          <option value="UNCOUNTED">Belum Dihitung</option>
+          <option value="MATCH">Cocok (0)</option>
+        </select>
+        <button class="btn btn-dark" onclick="openBeritaAcaraModal()">🖨️ Cetak Berita Acara</button>
+        <button class="btn btn-success" onclick="exportManagerCSV()">📥 Export CSV</button>
+        <button class="btn btn-outline" onclick="syncSystemStock()">🔄 Update Stok Sistem = Fisik</button>
+        <button class="btn btn-danger" onclick="resetAllCounts()">🧹 Reset Sesi Baru</button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Foto</th>
+              <th>SKU & Rak</th>
+              <th>Nama Barang</th>
+              <th>HPP Satuan</th>
+              <th>Stok Sistem</th>
+              <th>Stok Fisik</th>
+              <th>Selisih Unit</th>
+              <th>Selisih (Rp)</th>
+              <th>Petugas & Waktu</th>
+            </tr>
+          </thead>
+          <tbody id="auditTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: MASTER PRODUK, FOTO & QR -->
+  <div id="tab-master" class="tab-pane">
+    <div class="grid-2">
+      <div class="card no-print">
+        <h3 style="margin-top:0;">➕ Tambah / Edit Produk (Langsung ke Sheets)</h3>
+        <form id="masterForm" onsubmit="saveMasterItem(event)">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Kode SKU *</label>
+              <input type="text" id="mSku" placeholder="SBS-001" required />
+            </div>
+            <div class="form-group">
+              <label>Barcode Pabrik</label>
+              <input type="text" id="mBarcode" placeholder="Opsional" />
+            </div>
+            <div class="form-group" style="grid-column: span 2;">
+              <label>Nama Barang *</label>
+              <input type="text" id="mName" placeholder="Beras SPHP Bulog 5 Kg" required />
+            </div>
+            <div class="form-group">
+              <label>Zona</label>
+              <select id="mZone">
+                <option value="Subsidi">Subsidi</option>
+                <option value="Sembako">Sembako</option>
+                <option value="Pertanian">Pertanian</option>
+                <option value="Lainnya">Lainnya</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Lokasi Rak</label>
+              <input type="text" id="mRack" placeholder="Rak A1" />
+            </div>
+            <div class="form-group">
+              <label>Satuan *</label>
+              <input type="text" id="mUnit" placeholder="Karung / Pcs / Tabung" required />
+            </div>
+            <div class="form-group">
+              <label>Stok Sistem (Rahasia) *</label>
+              <input type="number" id="mSysStock" min="0" value="0" required />
+            </div>
+            <div class="form-group" style="grid-column: span 2;">
+              <label>Harga Beli / HPP per Satuan Rp (Rahasia)</label>
+              <input type="number" id="mCost" min="0" value="0" />
+            </div>
+
+            <div class="form-group" style="grid-column: span 2;">
+              <label>📷 Foto Produk (Membantu Karyawan Mengenali Barang)</label>
+              <div class="photo-upload-box">
+                <img id="photoPreviewImg" src="" alt="Preview" style="width:68px; height:68px; object-fit:cover; border-radius:8px; border:1px solid var(--border); display:none;" />
+                <div style="flex:1; min-width:180px;">
+                  <input type="file" id="mPhotoFile" accept="image/*" onchange="handlePhotoUpload(event)" style="font-size:0.8rem; padding:4px;" />
+                  <small style="display:block; color:var(--muted); margin-top:4px;">Otomatis dikompres ringan (160px) agar cepat disimpan & dimuat.</small>
+                  <button type="button" id="clearPhotoBtn" class="btn btn-outline btn-sm" style="margin-top:6px; display:none;" onclick="clearSelectedPhoto()">🗑️ Hapus Foto</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:12px; display:flex; gap:8px;">
+            <button type="submit" id="saveMasterBtn" class="btn btn-primary">💾 Simpan ke Google Sheets</button>
+            <button type="button" class="btn btn-outline" onclick="resetMasterForm()">Reset Form</button>
+          </div>
+        </form>
+
+        <hr style="margin:16px 0; border:none; border-top:1px solid var(--border);" />
+        <h4 style="margin:0 0 6px;">📥 Import Massal dari Excel</h4>
+        <p style="font-size:0.78rem; color:var(--muted); margin:0 0 6px;">
+          Format: <code>SKU;Nama Barang;Zona;Rak;Satuan;StokSistem;HPP</code>
+        </p>
+        <textarea id="bulkText" rows="3" style="width:100%; padding:8px; border-radius:8px; border:1px solid var(--border); font-family:monospace; font-size:0.78rem;" placeholder="SMB-003;Garam 250g;Sembako;Rak B2;Pcs;40;2500"></textarea>
+        <button id="bulkBtn" class="btn btn-accent btn-sm" style="margin-top:6px;" onclick="bulkImport()">Upload Massal ke Sheets</button>
+      </div>
+
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center;" class="no-print">
+          <h3 style="margin:0;">🏷️ Label QR Bibir Rak</h3>
+          <button class="btn btn-primary btn-sm" onclick="printQrLabels()">🖨️ Cetak QR</button>
+        </div>
+        <div id="qrContainer" class="qr-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: PROFIL KDKMP, TIM & LOG -->
+  <div id="tab-settings" class="tab-pane">
+    <div class="grid-2">
+      <div class="card">
+        <h3 style="margin-top:0;">🏢 Profil KDKMP & Daftar Karyawan</h3>
+        <p style="font-size:0.82rem; color:var(--muted); margin-top:0;">
+          Daftar nama di bawah ini menjadi pilihan tunggal di HP tim karyawan (tanpa opsi input nama bebas).
+        </p>
+
+        <div class="form-group" style="margin-bottom:10px;">
+          <label>Nama KDKMP / Gerai *</label>
+          <input type="text" id="cfgKdkmpName" placeholder="Contoh: KDKMP Selagedang" />
+        </div>
+
+        <div class="form-group" style="margin-bottom:10px;">
+          <label>Wilayah / Kecamatan & Kabupaten</label>
+          <input type="text" id="cfgKdkmpRegion" placeholder="Contoh: Kec. Cibeber, Kab. Cianjur" />
+        </div>
+
+        <div class="form-group" style="margin-bottom:10px;">
+          <label>Nama Manager Gerai *</label>
+          <input type="text" id="cfgManagerName" placeholder="Contoh: Abdurrahman" />
+        </div>
+
+        <div class="form-group" style="margin-bottom:10px;">
+          <label>Daftar Nama Karyawan / Tim SO (Pisahkan dengan koma)</label>
+          <textarea id="cfgEmployees" rows="3" placeholder="Contoh: Andi, Budi, Citra, Dedi, Eka, Fajar"></textarea>
+        </div>
+
+        <div class="form-group" style="margin-bottom:12px;">
+          <label>Ganti PIN Manager (Kosongkan jika tidak ingin mengubah)</label>
+          <input type="password" id="cfgNewPin" inputmode="numeric" maxlength="6" placeholder="PIN Baru (4-6 digit angka)" />
+        </div>
+
+        <button id="saveCfgBtn" class="btn btn-primary" style="width:100%;" onclick="saveCloudConfig()">💾 Simpan Pengaturan ke Google Sheets</button>
+
+        <hr style="margin:16px 0; border:none; border-top:1px solid var(--border);" />
+
+        <div class="form-group" style="margin-bottom:10px;">
+          <label>🔗 URL Web App Google Apps Script (/exec)</label>
+          <input type="text" id="scriptUrlInput" placeholder="https://script.google.com/macros/s/.../exec" />
+          <button class="btn btn-outline btn-sm" style="margin-top:6px;" onclick="saveScriptUrl()">Perbarui Koneksi URL</button>
+        </div>
+
+        <div class="form-group">
+          <label>📲 Bagikan Link Akses Karyawan</label>
+          <input type="text" id="employeeShareLink" readonly style="background:#f8fafc; font-size:0.8rem;" />
+          <div style="display:flex; gap:8px; margin-top:6px;">
+            <button class="btn btn-success btn-sm" onclick="shareEmployeeLinkWA()">Kirim ke WA Tim</button>
+            <button class="btn btn-outline btn-sm" onclick="copyEmployeeLink()">Salin Link</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0;">📜 Riwayat Input Tim SO (30 Terakhir)</h3>
+        <div class="table-wrap" style="max-height:540px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Waktu</th>
+                <th>Petugas</th>
+                <th>Barang</th>
+                <th>Hasil Fisik</th>
+                <th>Catatan</th>
+              </tr>
+            </thead>
+            <tbody id="logTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL PRATINJAU & CETAK BERITA ACARA STOCK OPNAME -->
+<div id="baModal" class="modal-backdrop">
+  <div class="ba-modal-box">
+    <div class="ba-modal-top">
+      <div>
+        <strong style="font-size:1.05rem;">📄 Berita Acara Stock Opname Fisik</strong>
+        <div style="font-size:0.78rem; color:var(--muted);">Sesuaikan opsi di bawah lalu klik Cetak / Simpan PDF</div>
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="executePrintBA()">🖨️ Cetak / Simpan PDF</button>
+        <button class="btn btn-outline" onclick="closeBeritaAcaraModal()">✕ Tutup</button>
+      </div>
+    </div>
+
+    <div class="ba-controls">
+      <div class="form-group">
+        <label>Nomor Berita Acara</label>
+        <input type="text" id="baDocNumber" oninput="renderBeritaAcaraDoc()" />
+      </div>
+      <div class="form-group">
+        <label>Saksi / Petugas Pelaksana SO</label>
+        <select id="baWitnessSelect" onchange="renderBeritaAcaraDoc()"></select>
+      </div>
+      <div class="form-group">
+        <label>Jabatan & Nama Pengawas (Opsional)</label>
+        <input type="text" id="baSupervisorName" placeholder="Contoh: Ketua Pengurus / Pengawas" oninput="renderBeritaAcaraDoc()" />
+      </div>
+      <div class="form-group">
+        <label>Tampilan Daftar Barang</label>
+        <select id="baRowScope" onchange="renderBeritaAcaraDoc()">
+          <option value="COUNTED">Semua yang Sudah Dihitung</option>
+          <option value="DIFF_ONLY">Khusus Barang Selisih Saja</option>
+          <option value="ALL_MASTER">Seluruh Master SKU</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="ba-scroll-area">
+      <div id="baPaperDocument" class="ba-paper"></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+  const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxABcWnvWaUzGPmLCmOvOABs8WwCbhN73rlCxEbgtA35WzH1a-c8EL5Cfg0xR8Cs0ye/exec';
+  const EMPLOYEE_PAGE_URL = window.location.protocol.startsWith('http')
+    ? new URL('so-karyawan.html', window.location.href).href
+    : 'https://abehidayat060499-debug.github.io/stock-opname-kdkmp/so-karyawan.html';
+
+  const LOCAL_CFG_KEY = 'kdkmp_mgr_cloud_cfg_v3';
+  const LOCAL_DATA_CACHE_KEY = 'kdkmp_mgr_data_cache_v3';
+  let scriptUrl = '';
+  let sessionPin = '';
+  let appConfig = {
+    kdkmpName: 'KDKMP Selagedang',
+    kdkmpRegion: 'Kec. Cibeber, Kab. Cianjur',
+    managerName: 'Abdurrahman',
+    employees: []
+  };
+  let itemsData = [];
+  let logsData = [];
+  let currentPhotoBase64 = '';
+  let keepExistingPhotoFlag = false;
+
+  function init() {
+    const savedCfg = JSON.parse(localStorage.getItem(LOCAL_CFG_KEY) || '{}');
+    scriptUrl = savedCfg.scriptUrl || DEFAULT_SCRIPT_URL;
+    document.getElementById('scriptUrlInput').value = scriptUrl;
+    updateShareLink();
+    setTimeout(() => document.getElementById('loginPin').focus(), 100);
+  }
+
+  function applyServerState(payload) {
+    if (!payload) return;
+    if (payload.config) appConfig = payload.config;
+    if (Array.isArray(payload.items)) itemsData = payload.items;
+    if (Array.isArray(payload.logs)) logsData = payload.logs;
+
+    try {
+      localStorage.setItem(LOCAL_DATA_CACHE_KEY, JSON.stringify({
+        config: appConfig,
+        items: itemsData,
+        logs: logsData
+      }));
+    } catch (e) {}
+
+    applyBrandingUI();
+    renderAll();
+    document.getElementById('syncStatus').textContent =
+      '🟢 Sheets Live (' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ')';
+  }
+
+  function saveScriptUrl() {
+    const val = document.getElementById('scriptUrlInput').value.trim();
+    if (!val.startsWith('https://script.google.com/')) {
+      alert('URL harus diawali dengan https://script.google.com/...');
+      return;
+    }
+    scriptUrl = val;
+    localStorage.setItem(LOCAL_CFG_KEY, JSON.stringify({ scriptUrl }));
+    updateShareLink();
+    fetchCloudData(true);
+  }
+
+  function updateShareLink() {
+    const link = scriptUrl
+      ? `${EMPLOYEE_PAGE_URL}?api=${encodeURIComponent(scriptUrl)}`
+      : EMPLOYEE_PAGE_URL;
+    document.getElementById('employeeShareLink').value = link;
+  }
+
+  function shareEmployeeLinkWA() {
+    const link = document.getElementById('employeeShareLink').value;
+    const msg = `📋 *LINK STOCK OPNAME TIM — ${appConfig.kdkmpName.toUpperCase()}*\nSilakan buka tautan berikut untuk melakukan hitung fisik barang di rak:\n${link}`;
+    window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+  }
+
+  function copyEmployeeLink() {
+    const link = document.getElementById('employeeShareLink').value;
+    navigator.clipboard.writeText(link).then(() => showToast('📋 Link karyawan disalin!'));
+  }
+
+  function applyBrandingUI() {
+    document.title = `Manager SO — ${appConfig.kdkmpName}`;
+    document.getElementById('headerTitle').textContent = `🛡️ Manager Stock Opname — ${appConfig.kdkmpName}`;
+    document.getElementById('headerSubtitle').textContent =
+      `Database Google Sheets Live • ${appConfig.kdkmpRegion || '-'} | Manager: ${appConfig.managerName}`;
+
+    document.getElementById('cfgKdkmpName').value = appConfig.kdkmpName || '';
+    document.getElementById('cfgKdkmpRegion').value = appConfig.kdkmpRegion || '';
+    document.getElementById('cfgManagerName').value = appConfig.managerName || '';
+    document.getElementById('cfgEmployees').value = (appConfig.employees || []).join(', ');
+  }
+
+  async function unlockDashboard() {
+    const pin = document.getElementById('loginPin').value.trim();
+    if (!pin) return;
+
+    const btn = document.getElementById('loginBtn');
+    btn.disabled = true;
+    btn.textContent = 'Memverifikasi PIN...';
+
+    const cached = JSON.parse(localStorage.getItem(LOCAL_DATA_CACHE_KEY) || 'null');
+    if (cached && cached.items) {
+      appConfig = cached.config || appConfig;
+      itemsData = cached.items || [];
+      logsData = cached.logs || [];
+    }
+
+    try {
+      const res = await fetch(`${scriptUrl}?action=get_items&role=manager&pin=${encodeURIComponent(pin)}`);
+      const json = await res.json();
+      if (json.ok) {
+        sessionPin = pin;
+        document.getElementById('lockScreen').style.display = 'none';
+        document.getElementById('loginPin').value = '';
+        applyServerState(json);
+        showToast('✅ Terhubung ke Google Sheets');
+      } else {
+        showToast('❌ ' + (json.error || 'PIN Salah!'));
+      }
+    } catch (err) {
+      showToast('⚠️ Gagal terhubung ke Google Sheets. Cek koneksi internet.');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Masuk & Sinkronkan Sheets';
+    }
+  }
+
+  function lockDashboard() {
+    sessionPin = '';
+    document.getElementById('lockScreen').style.display = 'flex';
+  }
+
+  async function fetchCloudData(notify = false) {
+    if (!scriptUrl || !sessionPin) return;
+    const statusEl = document.getElementById('syncStatus');
+    const refBtn = document.getElementById('refreshBtn');
+    statusEl.textContent = '⏳ Menyinkronkan...';
+    if (refBtn) refBtn.disabled = true;
+
+    try {
+      const res = await fetch(`${scriptUrl}?action=get_items&role=manager&pin=${encodeURIComponent(sessionPin)}`);
+      const json = await res.json();
+      if (json.ok) {
+        applyServerState(json);
+        if (notify) showToast('🔄 Data terbaru dimuat');
+      } else {
+        statusEl.textContent = '🔴 Error Auth';
+      }
+    } catch (e) {
+      statusEl.textContent = '🟡 Offline';
+      if (notify) showToast('⚠️ Gagal menyinkronkan data');
+    } finally {
+      if (refBtn) refBtn.disabled = false;
+    }
+  }
+
+  async function postToSheets(payload) {
     if (typeof navigator !== 'undefined' && navigator.onLine === false) {
       return { ok: false, error: 'Perangkat sedang offline.' };
     }
@@ -6,6 +938,7 @@ async function postToSheets(payload) {
     statusEl.textContent = '⏳ Menyimpan...';
 
     try {
+      // mode: 'no-cors' agar Safari iPhone tidak error saat Google Apps Script redirect 302
       await fetch(scriptUrl, {
         method: 'POST',
         mode: 'no-cors',
@@ -25,3 +958,612 @@ async function postToSheets(payload) {
       return { ok: false, error: 'Koneksi internet terputus saat menyimpan.' };
     }
   }
+
+  function switchTab(name, btn) {
+    document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    btn.classList.add('active');
+    renderAll();
+  }
+
+  function renderAll() {
+    renderAuditTable();
+    renderMasterQR();
+    renderLogsTable();
+  }
+
+  function formatRp(num) {
+    const prefix = num < 0 ? '-Rp ' : (num > 0 ? '+Rp ' : 'Rp ');
+    return prefix + Math.abs(num).toLocaleString('id-ID');
+  }
+
+  function renderAuditTable() {
+    const q = document.getElementById('auditSearch').value.toLowerCase().trim();
+    const zFilter = document.getElementById('auditZoneFilter').value;
+    const sFilter = document.getElementById('auditStatusFilter').value;
+    const tbody = document.getElementById('auditTableBody');
+    tbody.innerHTML = '';
+
+    let counted = 0, match = 0, diffCount = 0, diffRpTotal = 0;
+
+    itemsData.forEach(item => {
+      const hasPhys = item.physStock !== null && item.physStock !== undefined;
+      if (hasPhys) {
+        counted++;
+        const d = item.physStock - item.sysStock;
+        if (d === 0) match++;
+        else {
+          diffCount++;
+          diffRpTotal += d * (item.cost || 0);
+        }
+      }
+    });
+
+    document.getElementById('kpiTotal').textContent = itemsData.length;
+    document.getElementById('kpiProgress').textContent = `${counted} / ${itemsData.length}`;
+    document.getElementById('kpiMatch').textContent = match;
+    document.getElementById('kpiDiffCount').textContent = diffCount;
+    const rpEl = document.getElementById('kpiDiffRp');
+    rpEl.textContent = formatRp(diffRpTotal);
+    rpEl.style.color = diffRpTotal < 0 ? 'var(--danger)' : (diffRpTotal > 0 ? 'var(--warning)' : 'var(--success)');
+
+    const filtered = itemsData.filter(item => {
+      if (zFilter !== 'ALL' && item.zone !== zFilter) return false;
+      const hasPhys = item.physStock !== null && item.physStock !== undefined;
+      if (sFilter === 'UNCOUNTED' && hasPhys) return false;
+      if (sFilter === 'MATCH' && (!hasPhys || item.physStock !== item.sysStock)) return false;
+      if (sFilter === 'DIFF' && (!hasPhys || item.physStock === item.sysStock)) return false;
+
+      if (q) {
+        const hay = `${item.sku} ${item.name} ${item.rack} ${item.auditor} ${item.note}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+
+    filtered.forEach(item => {
+      const hasPhys = item.physStock !== null && item.physStock !== undefined;
+      const diff = hasPhys ? (item.physStock - item.sysStock) : null;
+      const diffRp = hasPhys ? (diff * (item.cost || 0)) : null;
+
+      let diffBadge = '<span class="badge badge-gray">-</span>';
+      if (hasPhys) {
+        if (diff === 0) diffBadge = '<span class="badge badge-green">0</span>';
+        else if (diff < 0) diffBadge = `<span class="badge badge-red">${diff}</span>`;
+        else diffBadge = `<span class="badge badge-amber">+${diff}</span>`;
+      }
+
+      const photoHtml = item.photo
+        ? `<img src="${escapeHtml(item.photo)}" class="thumb-img" alt="Foto" />`
+        : `<div class="thumb-empty">📦</div>`;
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${photoHtml}</td>
+        <td><span class="sku-tag">${escapeHtml(item.sku)}</span><br/><small style="color:#0369a1; font-weight:700;">${escapeHtml(item.rack || '-')}</small></td>
+        <td><strong>${escapeHtml(item.name)}</strong><br/><small style="color:var(--muted);">${escapeHtml(item.zone)} (${escapeHtml(item.unit)})</small></td>
+        <td>Rp ${(item.cost || 0).toLocaleString('id-ID')}</td>
+        <td><strong>${item.sysStock}</strong></td>
+        <td>
+          <input type="number" min="0" value="${hasPhys ? item.physStock : ''}" placeholder="-"
+            style="width:72px; padding:5px; border:1px solid var(--border); border-radius:6px; font-weight:700;"
+            onchange="managerOverrideCount('${item.sku}', this.value)" />
+        </td>
+        <td>${diffBadge}</td>
+        <td style="font-weight:700; color:${diffRp < 0 ? 'var(--danger)' : (diffRp > 0 ? 'var(--warning)' : 'inherit')}">
+          ${hasPhys ? formatRp(diffRp) : '-'}
+        </td>
+        <td>
+          <small><b>${escapeHtml(item.auditor || '-')}</b><br/>${escapeHtml(item.updatedAt || '')}</small>
+          ${item.note ? `<br/><small style="color:var(--muted);">📝 ${escapeHtml(item.note)}</small>` : ''}
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  async function managerOverrideCount(sku, val) {
+    if (val === '') return;
+    const res = await postToSheets({
+      action: 'submit_count',
+      sku,
+      physStock: parseInt(val, 10) || 0,
+      auditor: `Manager (${appConfig.managerName})`,
+      note: 'Koreksi Audit Manager'
+    });
+    if (res.ok) {
+      showToast('✅ Koreksi tersimpan');
+    } else {
+      alert('Gagal menyimpan: ' + (res.error || 'Unknown error'));
+    }
+  }
+
+  // BERITA ACARA STOCK OPNAME
+  function openBeritaAcaraModal() {
+    const now = new Date();
+    const romanMonths = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
+    const mRoman = romanMonths[now.getMonth()];
+    const year = now.getFullYear();
+    const dayPad = String(now.getDate()).padStart(2, '0');
+    const codePrefix = appConfig.kdkmpName.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 12) || 'KDKMP';
+
+    document.getElementById('baDocNumber').value = `BA-SO/${codePrefix}/${mRoman}/${year}/${dayPad}`;
+
+    const witnessSel = document.getElementById('baWitnessSelect');
+    witnessSel.innerHTML = '<option value="Tim Pelaksana SO Gerai">Tim Pelaksana SO Gerai</option>';
+    (appConfig.employees || []).forEach(emp => {
+      const opt = document.createElement('option');
+      opt.value = emp;
+      opt.textContent = emp;
+      witnessSel.appendChild(opt);
+    });
+
+    const auditors = itemsData.map(i => i.auditor).filter(a => a && !a.startsWith('Manager'));
+    if (auditors.length > 0) {
+      const topAuditor = auditors[0];
+      const exists = Array.from(witnessSel.options).some(o => o.value === topAuditor);
+      if (!exists) {
+        const opt = document.createElement('option');
+        opt.value = topAuditor;
+        opt.textContent = topAuditor;
+        witnessSel.appendChild(opt);
+      }
+      witnessSel.value = topAuditor;
+    }
+
+    document.getElementById('baModal').classList.add('open');
+    renderBeritaAcaraDoc();
+  }
+
+  function closeBeritaAcaraModal() {
+    document.getElementById('baModal').classList.remove('open');
+  }
+
+  function renderBeritaAcaraDoc() {
+    const docNum = document.getElementById('baDocNumber').value.trim() || '-';
+    const witnessName = document.getElementById('baWitnessSelect').value || 'Tim Pelaksana SO';
+    const supervisorText = document.getElementById('baSupervisorName').value.trim();
+    const scope = document.getElementById('baRowScope').value;
+    const zFilter = document.getElementById('auditZoneFilter').value;
+
+    const now = new Date();
+    const daysId = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const monthsId = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+    const dayName = daysId[now.getDay()];
+    const fullDateStr = `${now.getDate()} ${monthsId[now.getMonth()]} ${now.getFullYear()}`;
+    const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+
+    const zoneItems = itemsData.filter(i => zFilter === 'ALL' || i.zone === zFilter);
+    const countedItems = zoneItems.filter(i => i.physStock !== null && i.physStock !== undefined);
+
+    let matchCount = 0;
+    let shortCount = 0;
+    let overCount = 0;
+    let netDiffRp = 0;
+
+    countedItems.forEach(i => {
+      const d = i.physStock - i.sysStock;
+      if (d === 0) matchCount++;
+      else if (d < 0) shortCount++;
+      else overCount++;
+      netDiffRp += d * (i.cost || 0);
+    });
+
+    let rowsToPrint = countedItems;
+    if (scope === 'DIFF_ONLY') {
+      rowsToPrint = countedItems.filter(i => (i.physStock - i.sysStock) !== 0);
+    } else if (scope === 'ALL_MASTER') {
+      rowsToPrint = zoneItems;
+    }
+
+    const tableRowsHtml = rowsToPrint.length === 0
+      ? `<tr><td colspan="9" class="ctr" style="padding:12px;">Tidak ada item pada kriteria tampilan yang dipilih (Seluruh stok yang dihitung sesuai dengan sistem).</td></tr>`
+      : rowsToPrint.map((item, idx) => {
+          const hasPhys = item.physStock !== null && item.physStock !== undefined;
+          const diff = hasPhys ? (item.physStock - item.sysStock) : null;
+          const diffRp = hasPhys ? (diff * (item.cost || 0)) : null;
+          const diffStr = !hasPhys ? '-' : (diff > 0 ? `+${diff}` : `${diff}`);
+          const diffRpStr = !hasPhys ? '-' : (diffRp === 0 ? 'Rp 0' : formatRp(diffRp));
+
+          return `
+            <tr>
+              <td class="ctr">${idx + 1}</td>
+              <td class="ctr" style="font-family:monospace;">${escapeHtml(item.sku)}</td>
+              <td>${escapeHtml(item.name)}</td>
+              <td class="ctr">${escapeHtml(item.rack || '-')}</td>
+              <td class="ctr">${escapeHtml(item.unit)}</td>
+              <td class="num">${item.sysStock}</td>
+              <td class="num"><b>${hasPhys ? item.physStock : '-'}</b></td>
+              <td class="num"><b>${diffStr}</b></td>
+              <td class="num">${diffRpStr}</td>
+            </tr>
+          `;
+        }).join('');
+
+    const areaLabel = zFilter === 'ALL' ? 'Seluruh Zona Gerai' : `Zona ${zFilter}`;
+    const supervisorLabel = supervisorText || '( .................................... )';
+
+    document.getElementById('baPaperDocument').innerHTML = `
+      <div class="ba-kop">
+        <h2>KOPERASI DESA/KELURAHAN MERAH PUTIH</h2>
+        <h3>${escapeHtml(appConfig.kdkmpName)}</h3>
+        <p>${escapeHtml(appConfig.kdkmpRegion || 'Unit Gerai Ritel & Sembako Koperasi')}</p>
+      </div>
+
+      <div class="ba-title-block">
+        <u>BERITA ACARA HASIL STOCK OPNAME FISIK BARANG</u>
+        <div>Nomor: ${escapeHtml(docNum)}</div>
+      </div>
+
+      <p style="margin:0 0 8px;">
+        Pada hari ini, <b>${dayName}</b> tanggal <b>${fullDateStr}</b> pukul <b>${timeStr}</b>, bertempat di Gerai
+        <b>${escapeHtml(appConfig.kdkmpName)}</b> (${escapeHtml(appConfig.kdkmpRegion || '-')}), telah dilaksanakan pemeriksaan
+        dan penghitungan fisik persediaan barang (<i>Stock Opname</i>) pada cakupan <b>${escapeHtml(areaLabel)}</b> oleh:
+      </p>
+
+      <table class="ba-meta-table">
+        <tr>
+          <td style="width:28%;">1. Penanggung Jawab</td>
+          <td style="width:2%;">:</td>
+          <td><b>${escapeHtml(appConfig.managerName)}</b> (Manager Gerai ${escapeHtml(appConfig.kdkmpName)})</td>
+        </tr>
+        <tr>
+          <td>2. Pelaksana / Saksi SO</td>
+          <td>:</td>
+          <td><b>${escapeHtml(witnessName)}</b></td>
+        </tr>
+      </table>
+
+      <div class="ba-summary-box">
+        <strong>Ringkasan Hasil Pemeriksaan Fisik:</strong><br/>
+        • Total SKU Terdaftar (Cakupan): <b>${zoneItems.length} SKU</b> &nbsp;|&nbsp; Sudah Dihitung Fisik: <b>${countedItems.length} SKU</b><br/>
+        • Status Kecocokan: <b>${matchCount} SKU Cocok</b>, <b>${shortCount} SKU Kurang</b>, <b>${overCount} SKU Lebih</b><br/>
+        • Total Selisih Nilai Persediaan (Berdasarkan HPP): <b>${netDiffRp === 0 ? 'Rp 0 (Nihil)' : formatRp(netDiffRp)}</b>
+      </div>
+
+      <table class="ba-data-table">
+        <thead>
+          <tr>
+            <th style="width:28px;">No</th>
+            <th style="width:72px;">Kode SKU</th>
+            <th>Nama Barang</th>
+            <th style="width:65px;">Rak</th>
+            <th style="width:55px;">Satuan</th>
+            <th style="width:55px;">Sistem</th>
+            <th style="width:55px;">Fisik</th>
+            <th style="width:55px;">Selisih</th>
+            <th style="width:95px;">Nilai Selisih</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tableRowsHtml}
+        </tbody>
+      </table>
+
+      <p style="margin:8px 0 0;">
+        Demikian Berita Acara Hasil <i>Stock Opname</i> ini dibuat dengan sebenar-benarnya berdasarkan hasil penghitungan fisik
+        di lapangan untuk dipergunakan sebagai dasar penyesuaian pencatatan stok dan pertanggungjawaban administrasi koperasi.
+      </p>
+
+      <div class="ba-sign-grid">
+        <div>
+          <div>Pelaksana / Saksi SO,</div>
+          <div class="ba-sign-space"></div>
+          <div><b><u>${escapeHtml(witnessName)}</u></b></div>
+          <div style="font-size:9.5pt;">Tim Operasional Gerai</div>
+        </div>
+        <div>
+          <div>Mengetahui,</div>
+          <div class="ba-sign-space"></div>
+          <div><b>${escapeHtml(supervisorLabel)}</b></div>
+          <div style="font-size:9.5pt;">Pengurus / Pengawas Koperasi</div>
+        </div>
+        <div>
+          <div>${escapeHtml((appConfig.kdkmpRegion || '').split(',').pop().trim() || 'Cianjur')}, ${fullDateStr}</div>
+          <div>Manager Gerai,</div>
+          <div class="ba-sign-space" style="height:44px;"></div>
+          <div><b><u>${escapeHtml(appConfig.managerName)}</u></b></div>
+          <div style="font-size:9.5pt;">Manager ${escapeHtml(appConfig.kdkmpName)}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  function executePrintBA() {
+    document.body.classList.remove('print-qr');
+    document.body.classList.add('print-ba');
+    window.print();
+    setTimeout(() => document.body.classList.remove('print-ba'), 500);
+  }
+
+  function printQrLabels() {
+    document.body.classList.remove('print-ba');
+    document.body.classList.add('print-qr');
+    window.print();
+    setTimeout(() => document.body.classList.remove('print-qr'), 500);
+  }
+
+  function handlePhotoUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = new Image();
+      img.onload = function() {
+        const MAX_SIZE = 160;
+        let w = img.width;
+        let h = img.height;
+        if (w > h) {
+          if (w > MAX_SIZE) { h = Math.round(h * (MAX_SIZE / w)); w = MAX_SIZE; }
+        } else {
+          if (h > MAX_SIZE) { w = Math.round(w * (MAX_SIZE / h)); h = MAX_SIZE; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        currentPhotoBase64 = canvas.toDataURL('image/jpeg', 0.55);
+        keepExistingPhotoFlag = false;
+
+        const prev = document.getElementById('photoPreviewImg');
+        prev.src = currentPhotoBase64;
+        prev.style.display = 'block';
+        document.getElementById('clearPhotoBtn').style.display = 'inline-flex';
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function clearSelectedPhoto() {
+    currentPhotoBase64 = '';
+    keepExistingPhotoFlag = false;
+    document.getElementById('mPhotoFile').value = '';
+    const prev = document.getElementById('photoPreviewImg');
+    prev.src = '';
+    prev.style.display = 'none';
+    document.getElementById('clearPhotoBtn').style.display = 'none';
+  }
+
+  function resetMasterForm() {
+    document.getElementById('masterForm').reset();
+    clearSelectedPhoto();
+  }
+
+  async function saveMasterItem(e) {
+    e.preventDefault();
+    const btn = document.getElementById('saveMasterBtn');
+    btn.disabled = true;
+    btn.textContent = 'Menyimpan...';
+
+    const item = {
+      sku: document.getElementById('mSku').value.trim().toUpperCase(),
+      barcode: document.getElementById('mBarcode').value.trim(),
+      name: document.getElementById('mName').value.trim(),
+      zone: document.getElementById('mZone').value,
+      rack: document.getElementById('mRack').value.trim(),
+      unit: document.getElementById('mUnit').value.trim(),
+      sysStock: parseInt(document.getElementById('mSysStock').value || '0', 10),
+      cost: parseInt(document.getElementById('mCost').value || '0', 10),
+      photo: currentPhotoBase64,
+      keepExistingPhoto: keepExistingPhotoFlag
+    };
+
+    const res = await postToSheets({ action: 'upsert_items', items: [item] });
+    btn.disabled = false;
+    btn.textContent = '💾 Simpan ke Google Sheets';
+
+    if (res.ok) {
+      resetMasterForm();
+      showToast(`💾 SKU ${item.sku} tersimpan`);
+    } else {
+      alert('Gagal menyimpan: ' + (res.error || 'Error'));
+    }
+  }
+
+  async function bulkImport() {
+    const lines = document.getElementById('bulkText').value.trim().split('\n');
+    const items = [];
+    lines.forEach(line => {
+      const p = line.split(';').map(s => s.trim());
+      if (p.length >= 2 && p[0] && p[1]) {
+        items.push({
+          sku: p[0].toUpperCase(),
+          barcode: '',
+          name: p[1],
+          zone: p[2] || 'Sembako',
+          rack: p[3] || '-',
+          unit: p[4] || 'Pcs',
+          sysStock: parseInt(p[5] || '0', 10) || 0,
+          cost: parseInt(p[6] || '0', 10) || 0,
+          photo: '',
+          keepExistingPhoto: true
+        });
+      }
+    });
+    if (items.length === 0) return;
+
+    const btn = document.getElementById('bulkBtn');
+    btn.disabled = true;
+    btn.textContent = 'Mengunggah...';
+    const res = await postToSheets({ action: 'upsert_items', items });
+    btn.disabled = false;
+    btn.textContent = 'Upload Massal ke Sheets';
+
+    if (res.ok) {
+      document.getElementById('bulkText').value = '';
+      showToast(`📥 ${items.length} SKU berhasil diunggah!`);
+    }
+  }
+
+  function renderMasterQR() {
+    const box = document.getElementById('qrContainer');
+    box.innerHTML = '';
+    itemsData.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'qr-card';
+      const id = 'qr_' + item.sku.replace(/[^a-zA-Z0-9]/g, '_');
+      card.innerHTML = `
+        <div style="font-size:0.68rem; font-weight:800; color:#0f766e; text-transform:uppercase;">${escapeHtml(appConfig.kdkmpName)}</div>
+        <div id="${id}" class="qr-box"></div>
+        <strong style="font-size:0.88rem;">${escapeHtml(item.sku)}</strong><br/>
+        <span style="font-size:0.75rem;">${escapeHtml(item.name)}</span><br/>
+        <span style="font-size:0.74rem; color:#0369a1; font-weight:700;">${escapeHtml(item.rack || '-')} (${escapeHtml(item.unit)})</span>
+        <div class="no-print" style="margin-top:6px; display:flex; gap:4px; justify-content:center;">
+          <button class="btn btn-outline btn-sm" onclick="editItem('${item.sku}')">Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteItem('${item.sku}')">Hapus</button>
+        </div>
+      `;
+      box.appendChild(card);
+      if (typeof QRCode !== 'undefined') {
+        new QRCode(document.getElementById(id), { text: item.sku, width: 92, height: 92 });
+      }
+    });
+  }
+
+  function editItem(sku) {
+    const i = itemsData.find(x => x.sku === sku);
+    if (!i) return;
+    document.getElementById('mSku').value = i.sku;
+    document.getElementById('mBarcode').value = i.barcode || '';
+    document.getElementById('mName').value = i.name;
+    document.getElementById('mZone').value = i.zone;
+    document.getElementById('mRack').value = i.rack || '';
+    document.getElementById('mUnit').value = i.unit;
+    document.getElementById('mSysStock').value = i.sysStock;
+    document.getElementById('mCost').value = i.cost || 0;
+
+    if (i.photo) {
+      currentPhotoBase64 = i.photo;
+      keepExistingPhotoFlag = true;
+      const prev = document.getElementById('photoPreviewImg');
+      prev.src = i.photo;
+      prev.style.display = 'block';
+      document.getElementById('clearPhotoBtn').style.display = 'inline-flex';
+    } else {
+      clearSelectedPhoto();
+    }
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  async function deleteItem(sku) {
+    if (!confirm(`Hapus ${sku} dari Google Sheets?`)) return;
+    const res = await postToSheets({ action: 'delete_item', sku });
+    if (res.ok) {
+      showToast(`🗑️ ${sku} dihapus`);
+    }
+  }
+
+  async function syncSystemStock() {
+    if (!confirm('Perbarui seluruh Stok Sistem di Google Sheets mengikuti hasil Hitung Fisik saat ini?')) return;
+    const res = await postToSheets({ action: 'sync_sys_stock' });
+    if (res.ok) {
+      showToast('🔄 Stok Sistem diperbarui');
+    }
+  }
+
+  async function resetAllCounts() {
+    if (!confirm('Kosongkan seluruh kolom Stok Fisik DAN Riwayat Log SO di Google Sheets untuk memulai sesi Stock Opname baru?')) return;
+    const res = await postToSheets({ action: 'reset_counts' });
+    if (res.ok) {
+      showToast('🧹 Sesi audit & riwayat log berhasil direset');
+    }
+  }
+
+  async function saveCloudConfig() {
+    const btn = document.getElementById('saveCfgBtn');
+    btn.disabled = true;
+    btn.textContent = 'Menyimpan Pengaturan...';
+
+    const payload = {
+      action: 'save_config',
+      kdkmpName: document.getElementById('cfgKdkmpName').value.trim(),
+      kdkmpRegion: document.getElementById('cfgKdkmpRegion').value.trim(),
+      managerName: document.getElementById('cfgManagerName').value.trim(),
+      employeesStr: document.getElementById('cfgEmployees').value.trim(),
+      newPin: document.getElementById('cfgNewPin').value.trim()
+    };
+
+    const res = await postToSheets(payload);
+    btn.disabled = false;
+    btn.textContent = '💾 Simpan Pengaturan ke Google Sheets';
+
+    if (res.ok) {
+      if (res.pin) sessionPin = res.pin;
+      document.getElementById('cfgNewPin').value = '';
+      showToast('✅ Profil KDKMP & daftar tim tersimpan!');
+    } else {
+      alert(res.error || 'Gagal menyimpan pengaturan');
+    }
+  }
+
+  function renderLogsTable() {
+    const tbody = document.getElementById('logTableBody');
+    tbody.innerHTML = '';
+    if (logsData.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--muted);">Belum ada log aktivitas.</td></tr>';
+      return;
+    }
+    logsData.forEach(l => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><small>${escapeHtml(l.time)}</small></td>
+        <td><strong>${escapeHtml(l.auditor)}</strong></td>
+        <td><span class="sku-tag">${escapeHtml(l.sku)}</span> ${escapeHtml(l.name)}</td>
+        <td><strong>${l.physStock}</strong></td>
+        <td><small>${escapeHtml(l.note || '-')}</small></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function exportManagerCSV() {
+    const today = new Date().toISOString().slice(0, 10);
+    const safeName = appConfig.kdkmpName.replace(/[^a-zA-Z0-9]/g, '_');
+    const headers = [
+      'Tanggal_Audit', 'Nama_KDKMP', 'Wilayah', 'Manager', 'SKU', 'Barcode', 'Zona', 'Rak',
+      'Nama_Barang', 'Satuan', 'HPP_Satuan', 'Stok_Sistem', 'Stok_Fisik',
+      'Selisih_Unit', 'Selisih_Rupiah', 'Petugas_SO', 'Catatan', 'Waktu_Update'
+    ];
+
+    const rows = itemsData.map(i => {
+      const hasPhys = i.physStock !== null && i.physStock !== undefined;
+      const diff = hasPhys ? (i.physStock - i.sysStock) : '';
+      const diffRp = hasPhys ? (diff * (i.cost || 0)) : '';
+      return [
+        today, appConfig.kdkmpName, appConfig.kdkmpRegion, appConfig.managerName,
+        i.sku, i.barcode || '', i.zone, i.rack || '', i.name, i.unit,
+        i.cost || 0, i.sysStock, hasPhys ? i.physStock : '',
+        diff, diffRp, i.auditor || '', i.note || '', i.updatedAt || ''
+      ].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',');
+    });
+
+    const csv = '\uFEFF' + [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `AUDIT_SO_${safeName}_${today}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  function escapeHtml(s) {
+    return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
