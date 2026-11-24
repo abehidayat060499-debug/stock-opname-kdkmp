@@ -366,6 +366,7 @@
   let filterMode = 'ALL';
   let activeItem = null;
   let html5QrScanner = null;
+  let pendingSyncCount = 0;
 
   function init() {
     const params = new URLSearchParams(window.location.search);
@@ -588,8 +589,6 @@
     el.value = el.value.length <= 1 ? '0' : el.value.slice(0, -1);
   }
 
-let pendingSyncCount = 0;
-
   function submitItemCount() {
     if (!activeItem) return;
     const auditor = document.getElementById('auditorSelect').value.trim();
@@ -608,7 +607,6 @@ let pendingSyncCount = 0;
     const targetSku = activeItem.sku;
     const targetUnit = activeItem.unit;
 
-    // 1. Langsung perbarui tampilan & cache HP tanpa menunggu server (0 detik)
     const idx = itemsList.findIndex(x => x.sku === targetSku);
     if (idx !== -1) {
       itemsList[idx].physStock = physStock;
@@ -623,7 +621,6 @@ let pendingSyncCount = 0;
     closeCountModal();
     showToast(`✅ Tersimpan (${physStock} ${targetUnit})`);
 
-    // 2. Kirim ke Google Sheets secara senyap di latar belakang
     pendingSyncCount++;
     const subEl = document.getElementById('headerSub');
     subEl.textContent = `⏳ Menyinkronkan (${pendingSyncCount})...`;
