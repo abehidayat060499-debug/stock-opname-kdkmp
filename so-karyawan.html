@@ -3,19 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>SO Lapangan Tim — KDKMP</title>
+  <title>Stock Opname Tim — KDKMP</title>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <style>
     :root {
       --primary: #0f766e;
+      --primary-dark: #115e59;
       --accent: #0284c7;
       --success: #16a34a;
-      --danger: #dc2626;
+      --success-bg: #dcfce7;
+      --info-bg: #e0f2fe;
+      --info-text: #0369a1;
       --bg: #f1f5f9;
       --card: #ffffff;
       --text: #0f172a;
       --muted: #64748b;
       --border: #cbd5e1;
+      --radius: 14px;
     }
 
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -29,9 +33,9 @@
     }
 
     header {
-      background: linear-gradient(135deg, #0f766e 0%, #134e4a 100%);
+      background: linear-gradient(135deg, #0f172a 0%, #0f766e 100%);
       color: #fff;
-      padding: 12px 16px;
+      padding: 14px 16px;
       position: sticky;
       top: 0;
       z-index: 30;
@@ -39,46 +43,39 @@
       justify-content: space-between;
       align-items: center;
       gap: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
     }
 
-    header h1 { margin: 0; font-size: 1.02rem; }
-    header small { display: block; font-size: 0.74rem; color: #99f6e4; }
+    header h1 { margin: 0; font-size: 1.05rem; }
+    header small { display: block; font-size: 0.75rem; color: #99f6e4; }
 
-    .container { max-width: 760px; margin: 0 auto; padding: 12px; }
+    .container { max-width: 680px; margin: 0 auto; padding: 12px; }
 
     .card {
       background: var(--card);
-      border-radius: 12px;
+      border-radius: var(--radius);
       border: 1px solid var(--border);
-      padding: 12px;
+      padding: 14px;
       margin-bottom: 12px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
     }
 
-    .progress-bar-wrap {
-      background: #e2e8f0;
-      border-radius: 999px;
-      height: 10px;
-      overflow: hidden;
-      margin-top: 6px;
+    .label-title {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #334155;
+      margin-bottom: 6px;
+      text-transform: uppercase;
     }
 
-    .progress-bar-fill {
-      background: var(--success);
-      height: 100%;
-      width: 0%;
-      transition: width 0.25s ease;
-    }
-
-    .toolbar { display: flex; gap: 8px; margin-bottom: 10px; }
-
-    .input-box {
+    select, input[type="text"], input[type="number"] {
       width: 100%;
-      padding: 10px 12px;
+      padding: 11px 12px;
       border: 1.5px solid var(--border);
       border-radius: 10px;
-      font-size: 0.92rem;
+      font-size: 0.95rem;
       background: #fff;
+      color: var(--text);
     }
 
     .btn {
@@ -86,188 +83,189 @@
       align-items: center;
       justify-content: center;
       gap: 6px;
-      padding: 10px 14px;
+      padding: 11px 14px;
       border-radius: 10px;
       border: none;
-      font-size: 0.88rem;
+      font-size: 0.9rem;
       font-weight: 700;
       cursor: pointer;
       touch-action: manipulation;
     }
-    .btn:disabled { opacity: 0.6; }
-    .btn-accent { background: var(--accent); color: #fff; }
+    .btn:disabled { opacity: 0.55; cursor: not-allowed; }
     .btn-primary { background: var(--primary); color: #fff; }
-    .btn-outline { background: #fff; border: 1px solid var(--border); color: var(--text); }
+    .btn-accent { background: var(--accent); color: #fff; }
+    .btn-outline { background: #fff; border: 1.5px solid var(--border); color: var(--text); }
+    .btn-sm { padding: 7px 11px; font-size: 0.8rem; }
 
-    .pills { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 10px; }
-    .pill {
-      padding: 6px 12px;
+    .filter-pills {
+      display: flex;
+      gap: 6px;
+      margin-top: 10px;
+      overflow-x: auto;
+    }
+
+    .pill-btn {
+      padding: 7px 12px;
       border-radius: 999px;
       border: 1px solid var(--border);
       background: #fff;
-      font-size: 0.78rem;
+      font-size: 0.8rem;
       font-weight: 700;
       color: var(--muted);
-      white-space: nowrap;
       cursor: pointer;
+      white-space: nowrap;
     }
-    .pill.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .pill-btn.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
 
     .item-card {
       background: #fff;
-      border: 1px solid var(--border);
+      border: 1.5px solid var(--border);
       border-radius: 12px;
-      padding: 10px 12px;
-      margin-bottom: 8px;
+      padding: 12px;
+      margin-bottom: 10px;
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       cursor: pointer;
+      transition: transform 0.1s ease;
     }
-    .item-card.done { border-left: 5px solid var(--success); background: #f0fdf4; }
+    .item-card:active { transform: scale(0.99); }
+    .item-card.counted-mine { border-color: #86efac; background: #f0fdf4; }
+    .item-card.counted-other { border-color: #bae6fd; background: #f8fafc; }
 
-    .prod-thumb {
-      width: 54px;
-      height: 54px;
+    .item-thumb {
+      width: 56px;
+      height: 56px;
       border-radius: 10px;
       object-fit: cover;
       border: 1px solid var(--border);
       flex-shrink: 0;
-      background: #f8fafc;
     }
-
-    .prod-thumb-empty {
-      width: 54px;
-      height: 54px;
+    .item-thumb-empty {
+      width: 56px;
+      height: 56px;
       border-radius: 10px;
-      border: 1px dashed #cbd5e1;
-      flex-shrink: 0;
-      background: #f8fafc;
+      background: #f1f5f9;
+      border: 1px dashed var(--border);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.35rem;
-      color: #94a3b8;
+      font-size: 1.4rem;
+      flex-shrink: 0;
     }
 
     .sku-pill {
-      display: inline-block;
-      background: #e2e8f0;
       font-family: monospace;
-      font-weight: 700;
       font-size: 0.76rem;
-      padding: 2px 6px;
-      border-radius: 5px;
-    }
-
-    .rack-pill {
-      display: inline-block;
-      background: #e0f2fe;
-      color: #0369a1;
       font-weight: 700;
-      font-size: 0.74rem;
+      background: #e2e8f0;
       padding: 2px 6px;
       border-radius: 5px;
-      margin-left: 4px;
     }
 
-    .count-badge {
-      min-width: 74px;
-      text-align: center;
-      padding: 8px 8px;
-      border-radius: 10px;
-      font-weight: 800;
-      font-size: 0.9rem;
-      flex-shrink: 0;
+    .status-tag {
+      display: inline-block;
+      margin-top: 5px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 0.74rem;
+      font-weight: 700;
     }
-    .count-badge.pending { background: #f1f5f9; color: var(--muted); border: 1px dashed #94a3b8; }
-    .count-badge.saved { background: var(--success); color: #fff; }
+    .tag-pending { background: #fef3c7; color: #b45309; }
+    .tag-mine { background: var(--success-bg); color: var(--success); }
+    .tag-other { background: var(--info-bg); color: var(--info-text); }
 
+    /* MODAL INPUT NUMPAD */
     .modal-backdrop {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(15, 23, 42, 0.72);
+      background: rgba(15, 23, 42, 0.65);
       z-index: 100;
       align-items: flex-end;
       justify-content: center;
     }
     .modal-backdrop.open { display: flex; }
 
-    @media (min-width: 640px) {
-      .modal-backdrop { align-items: center; padding: 16px; }
-    }
-
-    .modal-sheet {
+    .sheet-modal {
       background: #fff;
       width: 100%;
-      max-width: 480px;
-      border-radius: 18px 18px 0 0;
-      padding: 16px;
+      max-width: 520px;
+      border-radius: 20px 20px 0 0;
+      padding: 18px;
       max-height: 92vh;
       overflow-y: auto;
     }
-    @media (min-width: 640px) { .modal-sheet { border-radius: 16px; } }
 
-    .modal-prod-header {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      flex: 1;
+    .other-notice {
+      background: #eff6ff;
+      border: 1px solid #93c5fd;
+      color: #1e40af;
+      padding: 9px 11px;
+      border-radius: 10px;
+      font-size: 0.8rem;
+      margin: 10px 0;
     }
 
-    .modal-prod-photo {
-      width: 84px;
-      height: 84px;
-      border-radius: 12px;
-      object-fit: cover;
-      border: 1.5px solid var(--border);
-      flex-shrink: 0;
-      background: #f8fafc;
-    }
-
-    .num-display {
-      background: #0f172a;
-      color: #38bdf8;
-      font-family: monospace;
-      font-size: 2.3rem;
+    .qty-display {
+      width: 100%;
+      font-size: 2rem;
       font-weight: 800;
-      text-align: right;
-      padding: 10px 16px;
+      text-align: center;
+      padding: 10px;
+      border: 2px solid var(--primary);
       border-radius: 12px;
+      background: #f0fdfa;
+      color: #0f172a;
       margin: 10px 0;
     }
 
     .numpad-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(3, 1fr);
       gap: 8px;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
     }
 
-    .num-btn {
-      height: 54px;
+    .num-key {
+      padding: 14px;
+      font-size: 1.25rem;
+      font-weight: 700;
       border-radius: 10px;
       border: 1px solid var(--border);
       background: #f8fafc;
-      font-size: 1.35rem;
-      font-weight: 800;
-      color: var(--text);
       cursor: pointer;
       touch-action: manipulation;
     }
-    .num-btn:active { background: #cbd5e1; }
-    .num-btn.op { background: #e0f2fe; color: #0369a1; font-size: 1rem; }
-    .num-btn.del { background: #fee2e2; color: #b91c1c; font-size: 1rem; }
+    .num-key:active { background: #e2e8f0; }
 
-    #reader { width: 100%; border-radius: 10px; overflow: hidden; background: #000; min-height: 230px; }
+    #qrReaderBox {
+      display: none;
+      margin-top: 10px;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 2px solid var(--primary);
+    }
 
     .toast {
-      position: fixed; top: 70px; left: 50%; transform: translateX(-50%);
-      background: #0f172a; color: #fff; padding: 9px 16px; border-radius: 999px;
-      font-size: 0.85rem; font-weight: 700; z-index: 200; opacity: 0; pointer-events: none;
-      transition: opacity 0.2s ease;
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0f172a;
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 999px;
+      font-size: 0.86rem;
+      font-weight: 600;
+      z-index: 200;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
     }
     .toast.show { opacity: 1; }
   </style>
@@ -276,384 +274,340 @@
 
 <header>
   <div>
-    <h1 id="empHeaderTitle">📋 SO Tim — KDKMP Selagedang</h1>
-    <small id="cloudBadge">Menghubungkan ke database...</small>
+    <h1 id="headerTitle">📋 Stock Opname — KDKMP Selagedang</h1>
+    <small id="headerSub">Menghubungkan ke database...</small>
   </div>
-  <button class="btn btn-outline" style="padding:7px 11px; font-size:0.8rem;" onclick="loadCloudItems(true)">🔄 Refresh</button>
+  <button id="refreshBtn" class="btn btn-accent btn-sm" onclick="loadCloudItems(true)">🔄 Refresh</button>
 </header>
 
 <div class="container">
-
+  <!-- PILIH NAMA PETUGAS (HANYA DARI DAFTAR MANAGER) -->
   <div class="card">
-    <label style="display:block; font-size:0.78rem; font-weight:700; margin-bottom:4px; color:#334155;">
-      👤 Pilih Nama Petugas Penghitung *
-    </label>
-    <select id="auditorSelect" class="input-box" onchange="handleAuditorChange()">
-      <option value="">-- Pilih Nama Anda --</option>
+    <label class="label-title" for="auditorSelect">👤 Pilih Nama Petugas Pelaksana *</label>
+    <select id="auditorSelect" onchange="onAuditorChange()">
+      <option value="">-- Memuat daftar nama tim... --</option>
     </select>
-    <input type="text" id="auditorCustomInput" class="input-box" placeholder="Ketik nama Anda..." style="margin-top:8px; display:none;" onchange="saveCache()" />
+    <small style="display:block; color:var(--muted); margin-top:6px;">
+      Pilih nama Anda terlebih dahulu sebelum mulai memindai atau menghitung barang.
+    </small>
+  </div>
 
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
-      <strong style="font-size:0.85rem;">Progress Gerai: <span id="progressText">0 / 0</span></strong>
-      <span style="font-size:0.75rem; color:var(--muted);">Tersimpan otomatis ke Sheets</span>
+  <!-- PENCARIAN & SCANNER QR -->
+  <div class="card">
+    <div style="display:flex; gap:8px;">
+      <input type="text" id="searchInput" placeholder="Cari nama barang, SKU, atau rak..." oninput="renderItemsList()" />
+      <button id="scanBtn" class="btn btn-primary" style="flex-shrink:0;" onclick="toggleScanner()">📷 Scan QR</button>
     </div>
-    <div class="progress-bar-wrap">
-      <div id="progressBar" class="progress-bar-fill"></div>
+
+    <div id="qrReaderBox">
+      <div id="qrReader" style="width:100%;"></div>
+      <button class="btn btn-outline" style="width:100%; border-radius:0;" onclick="stopScanner()">Tutup Kamera</button>
+    </div>
+
+    <div class="filter-pills">
+      <button class="pill-btn active" onclick="setFilterMode('ALL', this)">Semua (<span id="cntAll">0</span>)</button>
+      <button class="pill-btn" onclick="setFilterMode('UNCOUNTED', this)">Belum Dihitung (<span id="cntPending">0</span>)</button>
+      <button class="pill-btn" onclick="setFilterMode('MINE', this)">Hitungan Saya (<span id="cntMine">0</span>)</button>
     </div>
   </div>
 
-  <div class="toolbar">
-    <button class="btn btn-accent" style="white-space:nowrap;" onclick="openScanner()">📷 Scan QR</button>
-    <input type="text" id="searchBox" class="input-box" placeholder="Cari SKU, nama barang, atau rak..." oninput="renderList()" />
-  </div>
-
-  <div class="pills" id="zonePills">
-    <button class="pill active" onclick="setZone('ALL', this)">Semua Zona</button>
-    <button class="pill" onclick="setZone('Subsidi', this)">Subsidi</button>
-    <button class="pill" onclick="setZone('Sembako', this)">Sembako</button>
-    <button class="pill" onclick="setZone('Pertanian', this)">Pertanian</button>
-    <button class="pill" onclick="setZone('Lainnya', this)">Lainnya</button>
-  </div>
-
-  <div class="pills" id="statusPills">
-    <button class="pill active" onclick="setStatus('ALL', this)">Semua Status</button>
-    <button class="pill" onclick="setStatus('UNCOUNTED', this)">Belum Dihitung</button>
-    <button class="pill" onclick="setStatus('COUNTED', this)">Sudah Dihitung</button>
-  </div>
-
-  <div id="itemList"></div>
-
+  <!-- DAFTAR BARANG -->
+  <div id="itemsContainer"></div>
 </div>
 
-<!-- POPUP NUMPAD MODAL DENGAN FOTO PRODUK BESAR -->
-<div id="numpadModal" class="modal-backdrop">
-  <div class="modal-sheet">
-    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
-      <div class="modal-prod-header">
-        <img id="mItemPhoto" src="" alt="Foto Produk" class="modal-prod-photo" style="display:none;" />
-        <div>
-          <span id="mSkuTag" class="sku-pill">SKU</span>
-          <span id="mRackTag" class="rack-pill">Rak</span>
-          <h3 id="mItemName" style="margin:6px 0 2px; font-size:1.05rem;">Nama Barang</h3>
-          <small id="mItemUnit" style="color:var(--muted); font-weight:700;">Satuan: Pcs</small>
-        </div>
+<!-- MODAL HITUNG FISIK -->
+<div id="countModal" class="modal-backdrop">
+  <div class="sheet-modal">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
+      <div>
+        <span id="modalSku" class="sku-pill">SKU</span>
+        <span id="modalRack" style="font-size:0.8rem; font-weight:700; color:var(--accent); margin-left:4px;">Rak</span>
+        <h3 id="modalName" style="margin:6px 0 2px;">Nama Barang</h3>
+        <small id="modalUnit" style="color:var(--muted);">Satuan</small>
       </div>
-      <button class="btn btn-outline" style="padding:6px 12px;" onclick="closeNumpad()">✕</button>
+      <button class="btn btn-outline btn-sm" onclick="closeCountModal()">✕</button>
     </div>
 
-    <div class="num-display" id="numDisplay">0</div>
+    <div id="otherAuditorAlert" class="other-notice" style="display:none;"></div>
+
+    <input type="text" id="qtyInput" class="qty-display" readonly value="0" />
 
     <div class="numpad-grid">
-      <button class="num-btn" onclick="tapNum('7')">7</button>
-      <button class="num-btn" onclick="tapNum('8')">8</button>
-      <button class="num-btn" onclick="tapNum('9')">9</button>
-      <button class="num-btn del" onclick="tapBack()">⌫</button>
-
-      <button class="num-btn" onclick="tapNum('4')">4</button>
-      <button class="num-btn" onclick="tapNum('5')">5</button>
-      <button class="num-btn" onclick="tapNum('6')">6</button>
-      <button class="num-btn del" onclick="tapClear()">C</button>
-
-      <button class="num-btn" onclick="tapNum('1')">1</button>
-      <button class="num-btn" onclick="tapNum('2')">2</button>
-      <button class="num-btn" onclick="tapNum('3')">3</button>
-      <button class="num-btn op" onclick="tapAdd(1)">+1</button>
-
-      <button class="num-btn" onclick="tapNum('0')">0</button>
-      <button class="num-btn" onclick="tapNum('00')">00</button>
-      <button class="num-btn op" onclick="tapAdd(5)">+5</button>
-      <button class="num-btn op" onclick="tapAdd(10)">+10</button>
+      <button type="button" class="num-key" onclick="pressNum('1')">1</button>
+      <button type="button" class="num-key" onclick="pressNum('2')">2</button>
+      <button type="button" class="num-key" onclick="pressNum('3')">3</button>
+      <button type="button" class="num-key" onclick="pressNum('4')">4</button>
+      <button type="button" class="num-key" onclick="pressNum('5')">5</button>
+      <button type="button" class="num-key" onclick="pressNum('6')">6</button>
+      <button type="button" class="num-key" onclick="pressNum('7')">7</button>
+      <button type="button" class="num-key" onclick="pressNum('8')">8</button>
+      <button type="button" class="num-key" onclick="pressNum('9')">9</button>
+      <button type="button" class="num-key" style="background:#fee2e2; color:#dc2626;" onclick="clearNum()">C</button>
+      <button type="button" class="num-key" onclick="pressNum('0')">0</button>
+      <button type="button" class="num-key" onclick="backspaceNum()">⌫</button>
     </div>
 
-    <input type="text" id="mNoteInput" placeholder="Catatan fisik (opsional, misal: 1 kemasan bocor)..." class="input-box" style="margin-bottom:10px;" />
+    <input type="text" id="noteInput" placeholder="Catatan kondisi barang (opsional, misal: 1 kemasan rusak)" style="margin-bottom:12px;" />
 
-    <button id="saveCountBtn" class="btn btn-primary" style="width:100%; height:50px; font-size:1rem;" onclick="confirmCount()">
-      ✅ SIMPAN KE DATABASE
+    <button id="submitCountBtn" class="btn btn-primary" style="width:100%; height:48px; font-size:1rem;" onclick="submitItemCount()">
+      💾 Simpan Hasil Hitung Fisik
     </button>
-  </div>
-</div>
-
-<!-- SCANNER MODAL -->
-<div id="scanModal" class="modal-backdrop">
-  <div class="modal-sheet">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-      <h3 style="margin:0;">📷 Scan QR Rak / Barcode</h3>
-      <button class="btn btn-outline" style="padding:6px 12px;" onclick="closeScanner()">✕ Tutup</button>
-    </div>
-    <div id="reader"></div>
-    <p id="scanStatus" style="font-size:0.82rem; color:var(--muted); text-align:center; margin-top:8px;">
-      Arahkan kamera ke label QR rak...
-    </p>
   </div>
 </div>
 
 <div id="toast" class="toast"></div>
 
 <script>
-  // TEMPEL URL WEB APP GOOGLE APPS SCRIPT ANDA DI BAWAH INI:
   const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxABcWnvWaUzGPmLCmOvOABs8WwCbhN73rlCxEbgtA35WzH1a-c8EL5Cfg0xR8Cs0ye/exec';
-  const EMP_CACHE_KEY = 'kdkmp_emp_cloud_cache_v2';
+  const EMP_CACHE_KEY = 'kdkmp_emp_cloud_cache_v3';
 
   let scriptUrl = '';
-  let publicConfig = {
+  let appConfig = {
     kdkmpName: 'KDKMP Selagedang',
-    kdkmpRegion: '',
-    managerName: 'Abdurrahman',
+    kdkmpRegion: 'Kec. Cibeber, Kab. Cianjur',
     employees: []
   };
   let itemsList = [];
-  let zoneFilter = 'ALL';
-  let statusFilter = 'ALL';
-  let activeSku = null;
-  let numBuffer = '0';
-  let qrScanner = null;
+  let filterMode = 'ALL';
+  let activeItem = null;
+  let html5QrScanner = null;
 
-  function initEmp() {
+  function init() {
     const params = new URLSearchParams(window.location.search);
-    const apiParam = params.get('api');
-    const cached = JSON.parse(localStorage.getItem(EMP_CACHE_KEY) || '{}');
+    scriptUrl = params.get('api') || DEFAULT_SCRIPT_URL;
 
-    if (apiParam) {
-      scriptUrl = apiParam;
-      window.history.replaceState({}, document.title, window.location.pathname);
-    } else if (cached.scriptUrl) {
-      scriptUrl = cached.scriptUrl;
-    } else if (DEFAULT_SCRIPT_URL !== 'PASTE_URL_WEB_APP_ANDA_DI_SINI') {
-      scriptUrl = DEFAULT_SCRIPT_URL;
+    // Muat cache daftar barang agar tampilan muncul instan saat membuka link
+    const cached = JSON.parse(localStorage.getItem(EMP_CACHE_KEY) || 'null');
+    if (cached && cached.items) {
+      appConfig = cached.config || appConfig;
+      itemsList = cached.items || [];
+      populateEmployeeDropdown();
+      renderItemsList();
     }
 
-    publicConfig = cached.publicConfig || publicConfig;
-    itemsList = cached.items || [];
-    applyEmpConfigUI(cached.selectedAuditor || '', cached.customAuditor || '');
-    renderList();
-
-    if (scriptUrl) {
-      loadCloudItems(false);
-    } else {
-      document.getElementById('cloudBadge').textContent = '⚠️ URL Database belum diatur';
-    }
+    loadCloudItems(false);
   }
 
-  function applyEmpConfigUI(savedSelect, savedCustom) {
-    document.title = `SO Tim — ${publicConfig.kdkmpName}`;
-    document.getElementById('empHeaderTitle').textContent = `📋 SO Tim — ${publicConfig.kdkmpName}`;
-
+  function populateEmployeeDropdown() {
     const sel = document.getElementById('auditorSelect');
-    const currentVal = savedSelect || sel.value;
-    sel.innerHTML = '<option value="">-- Pilih Nama Anda --</option>';
+    const currentSelected = sel.value;
+    const employees = appConfig.employees || [];
 
-    (publicConfig.employees || []).forEach(emp => {
+    if (employees.length === 0) {
+      sel.innerHTML = '<option value="">-- Belum ada nama terdaftar (Hubungi Manager) --</option>';
+      return;
+    }
+
+    sel.innerHTML = '<option value="">-- Pilih Nama Anda --</option>';
+    employees.forEach(name => {
       const opt = document.createElement('option');
-      opt.value = emp;
-      opt.textContent = emp;
+      opt.value = name;
+      opt.textContent = name;
       sel.appendChild(opt);
     });
 
-    const otherOpt = document.createElement('option');
-    otherOpt.value = '__OTHER__';
-    otherOpt.textContent = '+ Nama Lainnya...';
-    sel.appendChild(otherOpt);
-
-    if (currentVal) sel.value = currentVal;
-    if (savedCustom) document.getElementById('auditorCustomInput').value = savedCustom;
-    handleAuditorChange(true);
-  }
-
-  function handleAuditorChange(skipSave = false) {
-    const val = document.getElementById('auditorSelect').value;
-    const customBox = document.getElementById('auditorCustomInput');
-    customBox.style.display = (val === '__OTHER__') ? 'block' : 'none';
-    if (!skipSave) saveCache();
-  }
-
-  function getActiveAuditorName() {
-    const sel = document.getElementById('auditorSelect').value;
-    if (sel === '__OTHER__') {
-      return document.getElementById('auditorCustomInput').value.trim();
+    if (currentSelected && employees.includes(currentSelected)) {
+      sel.value = currentSelected;
     }
-    return sel.trim();
   }
 
-  function saveCache() {
-    localStorage.setItem(EMP_CACHE_KEY, JSON.stringify({
-      scriptUrl,
-      publicConfig,
-      selectedAuditor: document.getElementById('auditorSelect').value,
-      customAuditor: document.getElementById('auditorCustomInput').value.trim(),
-      items: itemsList
-    }));
+  function onAuditorChange() {
+    renderItemsList();
   }
 
   async function loadCloudItems(notify = false) {
-    if (!scriptUrl) return;
-    const badge = document.getElementById('cloudBadge');
-    badge.textContent = '⏳ Memuat daftar barang...';
+    const subEl = document.getElementById('headerSub');
+    const refBtn = document.getElementById('refreshBtn');
+    subEl.textContent = 'Menyinkronkan data...';
+    if (refBtn) refBtn.disabled = true;
 
     try {
-      const res = await fetch(`${scriptUrl}?action=get_items&role=karyawan`);
+      const res = await fetch(`${scriptUrl}?action=get_items&role=employee`);
       const json = await res.json();
       if (json.ok) {
-        if (json.config) {
-          publicConfig = json.config;
-          applyEmpConfigUI();
-        }
+        appConfig = json.config || appConfig;
         itemsList = json.items || [];
-        saveCache();
-        renderList();
-        badge.textContent = `🟢 Terhubung (${itemsList.length} SKU)`;
-        if (notify) showToast('🔄 Daftar barang & profil diperbarui');
+        try {
+          localStorage.setItem(EMP_CACHE_KEY, JSON.stringify({ config: appConfig, items: itemsList }));
+        } catch (e) {}
+
+        document.title = `Stock Opname — ${appConfig.kdkmpName}`;
+        document.getElementById('headerTitle').textContent = `📋 Stock Opname — ${appConfig.kdkmpName}`;
+        subEl.textContent = `🟢 Terhubung • ${appConfig.kdkmpRegion || ''}`;
+        populateEmployeeDropdown();
+        renderItemsList();
+        if (notify) showToast('🔄 Data terbaru dimuat');
       } else {
-        badge.textContent = '🔴 Gagal memuat data';
+        subEl.textContent = '🔴 Gagal memuat data';
       }
-    } catch (e) {
-      badge.textContent = '🟡 Mode Offline (Data Cache)';
-      if (notify) showToast('⚠️ Tidak ada koneksi internet');
+    } catch (err) {
+      subEl.textContent = '🟡 Mode Offline (Cek Koneksi)';
+      if (notify) showToast('⚠️ Gagal terhubung ke server');
+    } finally {
+      if (refBtn) refBtn.disabled = false;
     }
   }
 
-  function setZone(z, btn) {
-    zoneFilter = z;
-    document.querySelectorAll('#zonePills .pill').forEach(p => p.classList.remove('active'));
+  function setFilterMode(mode, btn) {
+    filterMode = mode;
+    document.querySelectorAll('.pill-btn').forEach(el => el.classList.remove('active'));
     btn.classList.add('active');
-    renderList();
+    renderItemsList();
   }
 
-  function setStatus(s, btn) {
-    statusFilter = s;
-    document.querySelectorAll('#statusPills .pill').forEach(p => p.classList.remove('active'));
-    btn.classList.add('active');
-    renderList();
-  }
+  function renderItemsList() {
+    const selectedAuditor = document.getElementById('auditorSelect').value.trim();
+    const q = document.getElementById('searchInput').value.toLowerCase().trim();
+    const box = document.getElementById('itemsContainer');
+    box.innerHTML = '';
 
-  function renderList() {
-    const q = document.getElementById('searchBox').value.toLowerCase().trim();
-    const listEl = document.getElementById('itemList');
-    listEl.innerHTML = '';
+    let pendingCount = 0;
+    let mineCount = 0;
 
-    const total = itemsList.length;
-    const counted = itemsList.filter(i => i.physStock !== null && i.physStock !== undefined).length;
-    document.getElementById('progressText').textContent = `${counted} / ${total} Barang`;
-    document.getElementById('progressBar').style.width = total ? `${Math.round((counted / total) * 100)}%` : '0%';
+    itemsList.forEach(item => {
+      const hasPhys = item.physStock !== null && item.physStock !== undefined;
+      if (!hasPhys) {
+        pendingCount++;
+      } else if (selectedAuditor && item.auditor === selectedAuditor) {
+        mineCount++;
+      }
+    });
+
+    document.getElementById('cntAll').textContent = itemsList.length;
+    document.getElementById('cntPending').textContent = pendingCount;
+    document.getElementById('cntMine').textContent = mineCount;
 
     const filtered = itemsList.filter(item => {
-      if (zoneFilter !== 'ALL' && item.zone !== zoneFilter) return false;
-      const done = item.physStock !== null && item.physStock !== undefined;
-      if (statusFilter === 'UNCOUNTED' && done) return false;
-      if (statusFilter === 'COUNTED' && !done) return false;
+      const hasPhys = item.physStock !== null && item.physStock !== undefined;
+      const isMine = hasPhys && selectedAuditor && item.auditor === selectedAuditor;
+
+      if (filterMode === 'UNCOUNTED' && hasPhys) return false;
+      if (filterMode === 'MINE' && !isMine) return false;
+
       if (q) {
-        const hay = `${item.sku} ${item.barcode} ${item.name} ${item.rack}`.toLowerCase();
+        const hay = `${item.sku} ${item.barcode} ${item.name} ${item.rack} ${item.zone}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
     });
 
     if (filtered.length === 0) {
-      listEl.innerHTML = `<div class="card" style="text-align:center; color:var(--muted);">Tidak ada barang yang sesuai filter.</div>`;
+      box.innerHTML = '<div class="card" style="text-align:center; color:var(--muted);">Tidak ada barang pada filter ini.</div>';
       return;
     }
 
     filtered.forEach(item => {
-      const done = item.physStock !== null && item.physStock !== undefined;
+      const hasPhys = item.physStock !== null && item.physStock !== undefined;
+      const isMine = hasPhys && selectedAuditor && item.auditor === selectedAuditor;
+      const isOther = hasPhys && !isMine;
+
+      let cardClass = 'item-card';
+      let statusHtml = '<span class="status-tag tag-pending">⏳ Belum Dihitung</span>';
+
+      if (isMine) {
+        cardClass += ' counted-mine';
+        statusHtml = `<span class="status-tag tag-mine">✅ Hitungan Anda: ${item.physStock} ${escapeHtml(item.unit)}</span>`;
+      } else if (isOther) {
+        cardClass += ' counted-other';
+        statusHtml = `<span class="status-tag tag-other">🔒 Sudah dihitung oleh ${escapeHtml(item.auditor || 'Petugas lain')}</span>`;
+      }
+
+      const thumbHtml = item.photo
+        ? `<img src="${escapeHtml(item.photo)}" class="item-thumb" alt="Foto" />`
+        : `<div class="item-thumb-empty">📦</div>`;
+
       const div = document.createElement('div');
-      div.className = 'item-card' + (done ? ' done' : '');
-      div.onclick = () => openNumpad(item.sku);
-
-      const photoHtml = item.photo
-        ? `<img src="${escapeHtml(item.photo)}" class="prod-thumb" alt="${escapeHtml(item.name)}" />`
-        : `<div class="prod-thumb-empty">📦</div>`;
-
+      div.className = cardClass;
+      div.onclick = () => openCountModal(item.sku);
       div.innerHTML = `
-        ${photoHtml}
+        ${thumbHtml}
         <div style="flex:1; min-width:0;">
           <div>
             <span class="sku-pill">${escapeHtml(item.sku)}</span>
-            <span class="rack-pill">${escapeHtml(item.rack)}</span>
+            <span style="font-size:0.78rem; font-weight:700; color:var(--accent); margin-left:4px;">${escapeHtml(item.rack || '-')}</span>
           </div>
-          <div style="font-weight:800; font-size:0.95rem; margin-top:3px;">${escapeHtml(item.name)}</div>
-          <div style="font-size:0.75rem; color:var(--muted);">
-            Satuan: ${escapeHtml(item.unit)}
-            ${done && item.auditor ? `• Oleh: <b>${escapeHtml(item.auditor)}</b>` : ''}
-          </div>
-        </div>
-        <div class="count-badge ${done ? 'saved' : 'pending'}">
-          ${done ? `${item.physStock}<br/><span style="font-size:0.68rem; font-weight:600;">${escapeHtml(item.unit)}</span>` : 'Hitung'}
+          <div style="font-weight:700; font-size:0.95rem; margin-top:3px;">${escapeHtml(item.name)}</div>
+          <div style="font-size:0.78rem; color:var(--muted);">${escapeHtml(item.zone)} • Satuan: ${escapeHtml(item.unit)}</div>
+          ${statusHtml}
         </div>
       `;
-      listEl.appendChild(div);
+      box.appendChild(div);
     });
   }
 
-  function openNumpad(sku) {
-    const auditor = getActiveAuditorName();
+  function openCountModal(sku) {
+    const auditor = document.getElementById('auditorSelect').value.trim();
     if (!auditor) {
-      alert('Pilih atau isi Nama Petugas Penghitung di bagian atas terlebih dahulu.');
+      alert('Pilih nama Anda terlebih dahulu pada kotak Pilihan Nama Petugas di bagian atas!');
       document.getElementById('auditorSelect').focus();
       return;
     }
 
-    const item = itemsList.find(i => i.sku === sku);
+    const item = itemsList.find(x => x.sku === sku);
     if (!item) return;
-    activeSku = sku;
+    activeItem = item;
 
-    document.getElementById('mSkuTag').textContent = item.sku;
-    document.getElementById('mRackTag').textContent = item.rack;
-    document.getElementById('mItemName').textContent = item.name;
-    document.getElementById('mItemUnit').textContent = `Satuan Hitung: ${item.unit}`;
-    document.getElementById('mNoteInput').value = item.note || '';
+    const hasPhys = item.physStock !== null && item.physStock !== undefined;
+    const isMine = hasPhys && item.auditor === auditor;
+    const isOther = hasPhys && !isMine;
 
-    const photoEl = document.getElementById('mItemPhoto');
-    if (item.photo) {
-      photoEl.src = item.photo;
-      photoEl.style.display = 'block';
+    document.getElementById('modalSku').textContent = item.sku;
+    document.getElementById('modalRack').textContent = item.rack || '-';
+    document.getElementById('modalName').textContent = item.name;
+    document.getElementById('modalUnit').textContent = `Zona: ${item.zone} • Satuan: ${item.unit}`;
+
+    const alertBox = document.getElementById('otherAuditorAlert');
+    if (isOther) {
+      alertBox.style.display = 'block';
+      alertBox.innerHTML = `ℹ️ Barang ini sudah dihitung sebelumnya oleh <b>${escapeHtml(item.auditor)}</b>. Input angka di bawah hanya jika Anda ditugaskan menghitung ulang.`;
+      // Mulai dari 0 agar tidak terbawa angka input milik karyawan lain
+      document.getElementById('qtyInput').value = '0';
+      document.getElementById('noteInput').value = '';
+    } else if (isMine) {
+      alertBox.style.display = 'none';
+      document.getElementById('qtyInput').value = String(item.physStock);
+      document.getElementById('noteInput').value = item.note || '';
     } else {
-      photoEl.src = '';
-      photoEl.style.display = 'none';
+      alertBox.style.display = 'none';
+      document.getElementById('qtyInput').value = '0';
+      document.getElementById('noteInput').value = '';
     }
 
-    const hasVal = item.physStock !== null && item.physStock !== undefined;
-    numBuffer = hasVal ? String(item.physStock) : '0';
-    document.getElementById('numDisplay').textContent = numBuffer;
-
-    document.getElementById('numpadModal').classList.add('open');
+    document.getElementById('countModal').classList.add('open');
   }
 
-  function closeNumpad() {
-    document.getElementById('numpadModal').classList.remove('open');
-    activeSku = null;
+  function closeCountModal() {
+    document.getElementById('countModal').classList.remove('open');
+    activeItem = null;
   }
 
-  function tapNum(d) {
-    if (numBuffer === '0') numBuffer = (d === '00' ? '0' : d);
-    else if (numBuffer.length < 6) numBuffer += d;
-    document.getElementById('numDisplay').textContent = numBuffer;
+  function pressNum(digit) {
+    const el = document.getElementById('qtyInput');
+    el.value = el.value === '0' ? digit : (el.value + digit).slice(0, 6);
   }
 
-  function tapBack() {
-    numBuffer = numBuffer.length <= 1 ? '0' : numBuffer.slice(0, -1);
-    document.getElementById('numDisplay').textContent = numBuffer;
+  function clearNum() {
+    document.getElementById('qtyInput').value = '0';
   }
 
-  function tapClear() {
-    numBuffer = '0';
-    document.getElementById('numDisplay').textContent = '0';
+  function backspaceNum() {
+    const el = document.getElementById('qtyInput');
+    el.value = el.value.length <= 1 ? '0' : el.value.slice(0, -1);
   }
 
-  function tapAdd(n) {
-    numBuffer = String((parseInt(numBuffer || '0', 10)) + n);
-    document.getElementById('numDisplay').textContent = numBuffer;
-  }
+  async function submitItemCount() {
+    if (!activeItem) return;
+    const auditor = document.getElementById('auditorSelect').value.trim();
+    if (!auditor) {
+      alert('Pilih nama petugas terlebih dahulu.');
+      return;
+    }
 
-  async function confirmCount() {
-    const item = itemsList.find(i => i.sku === activeSku);
-    if (!item) return;
-
-    const auditor = getActiveAuditorName() || 'Tim SO';
-    const physStock = parseInt(numBuffer || '0', 10) || 0;
-    const note = document.getElementById('mNoteInput').value.trim();
-
-    const btn = document.getElementById('saveCountBtn');
+    const physStock = parseInt(document.getElementById('qtyInput').value || '0', 10);
+    const note = document.getElementById('noteInput').value.trim();
+    const btn = document.getElementById('submitCountBtn');
     btn.disabled = true;
-    btn.textContent = '⏳ Mengirim ke Sheets...';
+    btn.textContent = 'Menyimpan...';
 
     try {
       const res = await fetch(scriptUrl, {
@@ -661,101 +615,90 @@
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({
           action: 'submit_count',
-          sku: item.sku,
+          sku: activeItem.sku,
           physStock,
           auditor,
           note
         })
       });
       const json = await res.json();
-
       if (json.ok) {
-        item.physStock = physStock;
-        item.auditor = auditor;
-        item.note = note;
-        saveCache();
-        playBeep();
-        closeNumpad();
-        renderList();
-        showToast(`✅ Tersimpan: ${item.name} = ${physStock} ${item.unit}`);
+        if (Array.isArray(json.items)) {
+          itemsList = json.items;
+          try {
+            localStorage.setItem(EMP_CACHE_KEY, JSON.stringify({ config: appConfig, items: itemsList }));
+          } catch (e) {}
+        }
+        renderItemsList();
+        closeCountModal();
+        showToast(`✅ Tersimpan (${physStock} ${activeItem.unit})`);
       } else {
-        alert('Gagal menyimpan ke server: ' + (json.error || 'Error'));
+        alert('Gagal menyimpan: ' + (json.error || 'Error'));
       }
     } catch (err) {
-      alert('Koneksi terputus saat mengirim data. Periksa sinyal internet Anda lalu tekan Simpan lagi.');
+      alert('Koneksi terputus saat menyimpan. Periksa jaringan internet lalu coba lagi.');
     } finally {
       btn.disabled = false;
-      btn.textContent = '✅ SIMPAN KE DATABASE';
+      btn.textContent = '💾 Simpan Hasil Hitung Fisik';
     }
   }
 
-  function openScanner() {
-    const auditor = getActiveAuditorName();
+  // SCANNER QR / BARCODE
+  function toggleScanner() {
+    const box = document.getElementById('qrReaderBox');
+    if (box.style.display === 'block') {
+      stopScanner();
+      return;
+    }
+    const auditor = document.getElementById('auditorSelect').value.trim();
     if (!auditor) {
-      alert('Pilih atau isi Nama Petugas Penghitung terlebih dahulu.');
-      document.getElementById('auditorSelect').focus();
+      alert('Pilih nama Anda terlebih dahulu sebelum memindai QR!');
       return;
     }
 
-    document.getElementById('scanModal').classList.add('open');
-    if (typeof Html5Qrcode === 'undefined') {
-      document.getElementById('scanStatus').textContent = '⚠️ Library scanner belum termuat.';
-      return;
-    }
-    qrScanner = new Html5Qrcode("reader");
-    qrScanner.start(
-      { facingMode: "environment" },
+    box.style.display = 'block';
+    html5QrScanner = new Html5Qrcode('qrReader');
+    html5QrScanner.start(
+      { facingMode: 'environment' },
       { fps: 10, qrbox: { width: 220, height: 220 } },
-      (code) => {
-        playBeep();
-        closeScanner();
-        const found = itemsList.find(i =>
-          i.sku.toLowerCase() === code.trim().toLowerCase() ||
-          (i.barcode && i.barcode.toLowerCase() === code.trim().toLowerCase())
-        );
+      (decodedText) => {
+        const code = decodedText.trim().toUpperCase();
+        const found = itemsList.find(i => i.sku.toUpperCase() === code || (i.barcode && i.barcode.toUpperCase() === code));
         if (found) {
-          openNumpad(found.sku);
+          stopScanner();
+          openCountModal(found.sku);
         } else {
-          showToast(`⚠️ Kode "${code}" belum terdaftar di Master`);
+          showToast(`⚠️ Kode ${code} tidak terdaftar`);
         }
       },
       () => {}
     ).catch(() => {
-      document.getElementById('scanStatus').textContent = '❌ Pastikan dibuka lewat HTTPS dan izin kamera aktif.';
+      alert('Kamera tidak dapat diakses. Pastikan izin kamera diizinkan pada browser.');
+      box.style.display = 'none';
     });
   }
 
-  function closeScanner() {
-    document.getElementById('scanModal').classList.remove('open');
-    if (qrScanner) {
-      qrScanner.stop().then(() => qrScanner.clear()).catch(() => {});
-      qrScanner = null;
+  function stopScanner() {
+    const box = document.getElementById('qrReaderBox');
+    box.style.display = 'none';
+    if (html5QrScanner) {
+      html5QrScanner.stop().then(() => html5QrScanner.clear()).catch(() => {});
+      html5QrScanner = null;
     }
-  }
-
-  function playBeep() {
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      osc.frequency.setValueAtTime(880, ctx.currentTime);
-      osc.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.1);
-    } catch (e) {}
   }
 
   function showToast(msg) {
     const t = document.getElementById('toast');
     t.textContent = msg;
     t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 2300);
+    setTimeout(() => t.classList.remove('show'), 2200);
   }
 
   function escapeHtml(s) {
     return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
-  window.addEventListener('DOMContentLoaded', initEmp);
+  window.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>
