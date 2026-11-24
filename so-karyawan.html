@@ -179,7 +179,6 @@
     .tag-mine { background: var(--success-bg); color: var(--success); }
     .tag-other { background: var(--info-bg); color: var(--info-text); }
 
-    /* MODAL INPUT NUMPAD */
     .modal-backdrop {
       display: none;
       position: fixed;
@@ -253,14 +252,14 @@
 
     .toast {
       position: fixed;
-      bottom: 20px;
+      bottom: 24px;
       left: 50%;
       transform: translateX(-50%);
       background: #0f172a;
       color: #fff;
       padding: 10px 18px;
       border-radius: 999px;
-      font-size: 0.86rem;
+      font-size: 0.88rem;
       font-weight: 600;
       z-index: 200;
       opacity: 0;
@@ -281,7 +280,6 @@
 </header>
 
 <div class="container">
-  <!-- PILIH NAMA PETUGAS (HANYA DARI DAFTAR MANAGER) -->
   <div class="card">
     <label class="label-title" for="auditorSelect">👤 Pilih Nama Petugas Pelaksana *</label>
     <select id="auditorSelect" onchange="onAuditorChange()">
@@ -292,7 +290,6 @@
     </small>
   </div>
 
-  <!-- PENCARIAN & SCANNER QR -->
   <div class="card">
     <div style="display:flex; gap:8px;">
       <input type="text" id="searchInput" placeholder="Cari nama barang, SKU, atau rak..." oninput="renderItemsList()" />
@@ -311,11 +308,9 @@
     </div>
   </div>
 
-  <!-- DAFTAR BARANG -->
   <div id="itemsContainer"></div>
 </div>
 
-<!-- MODAL HITUNG FISIK -->
 <div id="countModal" class="modal-backdrop">
   <div class="sheet-modal">
     <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
@@ -376,7 +371,6 @@
     const params = new URLSearchParams(window.location.search);
     scriptUrl = params.get('api') || DEFAULT_SCRIPT_URL;
 
-    // Muat cache daftar barang agar tampilan muncul instan saat membuka link
     const cached = JSON.parse(localStorage.getItem(EMP_CACHE_KEY) || 'null');
     if (cached && cached.items) {
       appConfig = cached.config || appConfig;
@@ -560,7 +554,6 @@
     if (isOther) {
       alertBox.style.display = 'block';
       alertBox.innerHTML = `ℹ️ Barang ini sudah dihitung sebelumnya oleh <b>${escapeHtml(item.auditor)}</b>. Input angka di bawah hanya jika Anda ditugaskan menghitung ulang.`;
-      // Mulai dari 0 agar tidak terbawa angka input milik karyawan lain
       document.getElementById('qtyInput').value = '0';
       document.getElementById('noteInput').value = '';
     } else if (isMine) {
@@ -603,38 +596,51 @@
       return;
     }
 
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      alert('HP sedang offline. Aktifkan data seluler atau Wi-Fi lalu coba simpan kembali.');
+      return;
+    }
+
     const physStock = parseInt(document.getElementById('qtyInput').value || '0', 10);
     const note = document.getElementById('noteInput').value.trim();
+    const targetSku = activeItem.sku;
+    const targetUnit = activeItem.unit;
     const btn = document.getElementById('submitCountBtn');
     btn.disabled = true;
     btn.textContent = 'Menyimpan...';
 
     try {
-      const res = await fetch(scriptUrl, {
+      // mode: 'no-cors' mencegah Safari iPhone error saat Google Apps Script melakukan redirect 302
+      await fetch(scriptUrl, {
         method: 'POST',
+        mode: 'no-cors',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({
           action: 'submit_count',
-          sku: activeItem.sku,
+          sku: targetSku,
           physStock,
           auditor,
           note
         })
       });
-      const json = await res.json();
-      if (json.ok) {
-        if (Array.isArray(json.items)) {
-          itemsList = json.items;
-          try {
-            localStorage.setItem(EMP_CACHE_KEY, JSON.stringify({ config: appConfig, items: itemsList }));
-          } catch (e) {}
-        }
-        renderItemsList();
-        closeCountModal();
-        showToast(`✅ Tersimpan (${physStock} ${activeItem.unit})`);
-      } else {
-        alert('Gagal menyimpan: ' + (json.error || 'Error'));
+
+      // Perbarui status item di layar & cache HP secara langsung
+      const idx = itemsList.findIndex(x => x.sku === targetSku);
+      if (idx !== -1) {
+        itemsList[idx].physStock = physStock;
+        itemsList[idx].auditor = auditor;
+        itemsList[idx].note = note;
       }
+      try {
+        localStorage.setItem(EMP_CACHE_KEY, JSON.stringify({ config: appConfig, items: itemsList }));
+      } catch (e) {}
+
+      renderItemsList();
+      closeCountModal();
+      showToast(`✅ Tersimpan (${physStock} ${targetUnit})`);
+
+      // Sinkronisasi ringan di latar belakang setelah 1.2 detik
+      setTimeout(() => loadCloudItems(false), 1200);
     } catch (err) {
       alert('Koneksi terputus saat menyimpan. Periksa jaringan internet lalu coba lagi.');
     } finally {
@@ -643,7 +649,6 @@
     }
   }
 
-  // SCANNER QR / BARCODE
   function toggleScanner() {
     const box = document.getElementById('qrReaderBox');
     if (box.style.display === 'block') {
