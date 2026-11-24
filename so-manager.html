@@ -250,6 +250,19 @@
       width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.88rem;
     }
 
+    .emp-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 10px 12px;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+
     .photo-upload-box {
       border: 1.5px dashed #94a3b8;
       border-radius: 10px;
@@ -420,7 +433,6 @@
     }
     .toast.show { opacity: 1; }
 
-    /* PRINT STYLES — HILANGKAN HEADER/FOOTER BROWSER & DUKUNG MULTI-HALAMAN */
     @page {
       size: A4 portrait;
       margin: 0;
@@ -658,10 +670,28 @@
   <div id="tab-settings" class="tab-pane">
     <div class="grid-2">
       <div class="card">
-        <h3 style="margin-top:0;">🏢 Profil KDKMP & Daftar Karyawan</h3>
+        <h3 style="margin-top:0;">👥 Manajemen Tim SO & Link Akses Pribadi</h3>
         <p style="font-size:0.82rem; color:var(--muted); margin-top:0;">
-          Daftar nama di bawah ini menjadi pilihan tunggal di HP tim karyawan (tanpa opsi input nama bebas).
+          Tambahkan karyawan di bawah ini. Setiap karyawan mendapat <b>link pribadi terkunci</b> (tanpa bisa pilih nama rekan lain), dan barang yang sudah dihitung satu petugas otomatis terkunci dari petugas lainnya.
         </p>
+
+        <div style="display:flex; gap:8px; margin-bottom:12px;">
+          <input type="text" id="newEmpNameInput" class="input-ctrl" style="flex:1;" placeholder="Ketik nama karyawan baru..." onkeydown="if(event.key==='Enter'){ event.preventDefault(); addNewEmployee(); }" />
+          <button type="button" class="btn btn-primary" onclick="addNewEmployee()">➕ Tambah Karyawan</button>
+        </div>
+
+        <div id="employeeLinksList" style="margin-bottom:14px;"></div>
+
+        <div class="form-group" style="margin-bottom:12px; background:#fefce8; border:1px solid #fde047; padding:10px; border-radius:10px;">
+          <label>🔑 Kode Kunci Link Karyawan (Kontrol Akses)</label>
+          <input type="text" id="cfgEmpKey" placeholder="Contoh: KDKMP26" />
+          <small style="display:block; color:#854d0e; margin-top:4px;">
+            Ubah kode ini lalu klik Simpan Profil jika ingin menghanguskan seluruh link karyawan yang pernah dibagikan sebelumnya.
+          </small>
+        </div>
+
+        <hr style="margin:16px 0; border:none; border-top:1px solid var(--border);" />
+        <h3 style="margin-top:0;">🏢 Profil Gerai & PIN Manager</h3>
 
         <div class="form-group" style="margin-bottom:10px;">
           <label>Nama KDKMP / Gerai *</label>
@@ -678,39 +708,25 @@
           <input type="text" id="cfgManagerName" placeholder="Contoh: Abdurrahman" />
         </div>
 
-        <div class="form-group" style="margin-bottom:10px;">
-          <label>Daftar Nama Karyawan / Tim SO (Pisahkan dengan koma)</label>
-          <textarea id="cfgEmployees" rows="3" placeholder="Contoh: Andi, Budi, Citra, Dedi, Eka, Fajar"></textarea>
-        </div>
-
         <div class="form-group" style="margin-bottom:12px;">
-          <label>Ganti PIN Manager (Kosongkan jika tidak ingin mengubah)</label>
-          <input type="password" id="cfgNewPin" inputmode="numeric" maxlength="6" placeholder="PIN Baru (4-6 digit angka)" />
+          <label>Ganti PIN Login Manager (Kosongkan jika tidak ingin mengubah)</label>
+          <input type="password" id="cfgNewPin" inputmode="numeric" maxlength="6" placeholder="PIN Baru Manager (4-6 digit angka)" />
         </div>
 
-        <button id="saveCfgBtn" class="btn btn-primary" style="width:100%;" onclick="saveCloudConfig()">💾 Simpan Pengaturan ke Google Sheets</button>
+        <button id="saveCfgBtn" class="btn btn-primary" style="width:100%;" onclick="saveCloudConfig()">💾 Simpan Profil & Kode Kunci ke Sheets</button>
 
         <hr style="margin:16px 0; border:none; border-top:1px solid var(--border);" />
 
-        <div class="form-group" style="margin-bottom:10px;">
+        <div class="form-group" style="margin-bottom:0;">
           <label>🔗 URL Web App Google Apps Script (/exec)</label>
           <input type="text" id="scriptUrlInput" placeholder="https://script.google.com/macros/s/.../exec" />
           <button class="btn btn-outline btn-sm" style="margin-top:6px;" onclick="saveScriptUrl()">Perbarui Koneksi URL</button>
-        </div>
-
-        <div class="form-group">
-          <label>📲 Bagikan Link Akses Karyawan</label>
-          <input type="text" id="employeeShareLink" readonly style="background:#f8fafc; font-size:0.8rem;" />
-          <div style="display:flex; gap:8px; margin-top:6px;">
-            <button class="btn btn-success btn-sm" onclick="shareEmployeeLinkWA()">Kirim ke WA Tim</button>
-            <button class="btn btn-outline btn-sm" onclick="copyEmployeeLink()">Salin Link</button>
-          </div>
         </div>
       </div>
 
       <div class="card">
         <h3 style="margin-top:0;">📜 Riwayat Input Tim SO (30 Terakhir)</h3>
-        <div class="table-wrap" style="max-height:540px;">
+        <div class="table-wrap" style="max-height:680px;">
           <table>
             <thead>
               <tr>
@@ -781,32 +797,39 @@
     ? new URL('so-karyawan.html', window.location.href).href
     : 'https://abehidayat060499-debug.github.io/stock-opname-kdkmp/so-karyawan.html';
 
-  const LOCAL_CFG_KEY = 'kdkmp_mgr_cloud_cfg_v3';
-  const LOCAL_DATA_CACHE_KEY = 'kdkmp_mgr_data_cache_v3';
+  const LOCAL_CFG_KEY = 'kdkmp_mgr_cloud_cfg_v4';
+  const LOCAL_DATA_CACHE_KEY = 'kdkmp_mgr_data_cache_v4';
   let scriptUrl = '';
   let sessionPin = '';
   let appConfig = {
     kdkmpName: 'KDKMP Selagedang',
     kdkmpRegion: 'Kec. Cibeber, Kab. Cianjur',
     managerName: 'Abdurrahman',
-    employees: []
+    employees: [],
+    empKey: 'KDKMP26'
   };
   let itemsData = [];
   let logsData = [];
   let currentPhotoBase64 = '';
   let keepExistingPhotoFlag = false;
+  let mgrPendingSync = 0;
 
   function init() {
     const savedCfg = JSON.parse(localStorage.getItem(LOCAL_CFG_KEY) || '{}');
     scriptUrl = savedCfg.scriptUrl || DEFAULT_SCRIPT_URL;
     document.getElementById('scriptUrlInput').value = scriptUrl;
-    updateShareLink();
     setTimeout(() => document.getElementById('loginPin').focus(), 100);
   }
 
   function applyServerState(payload) {
     if (!payload) return;
-    if (payload.config) appConfig = payload.config;
+    if (payload.config) {
+      appConfig = {
+        ...appConfig,
+        ...payload.config,
+        empKey: payload.config.empKey || appConfig.empKey || 'KDKMP26'
+      };
+    }
     if (Array.isArray(payload.items)) itemsData = payload.items;
     if (Array.isArray(payload.logs)) logsData = payload.logs;
 
@@ -832,26 +855,113 @@
     }
     scriptUrl = val;
     localStorage.setItem(LOCAL_CFG_KEY, JSON.stringify({ scriptUrl }));
-    updateShareLink();
+    renderEmployeeLinks();
     fetchCloudData(true);
   }
 
-  function updateShareLink() {
-    const link = scriptUrl
-      ? `${EMPLOYEE_PAGE_URL}?api=${encodeURIComponent(scriptUrl)}`
-      : EMPLOYEE_PAGE_URL;
-    document.getElementById('employeeShareLink').value = link;
+  function buildPersonalEmployeeLink(empName) {
+    const activeKey = (document.getElementById('cfgEmpKey').value || appConfig.empKey || 'KDKMP26').trim();
+    const params = new URLSearchParams({
+      api: scriptUrl,
+      emp: empName,
+      key: activeKey
+    });
+    return `${EMPLOYEE_PAGE_URL}?${params.toString()}`;
   }
 
-  function shareEmployeeLinkWA() {
-    const link = document.getElementById('employeeShareLink').value;
-    const msg = `📋 *LINK STOCK OPNAME TIM — ${appConfig.kdkmpName.toUpperCase()}*\nSilakan buka tautan berikut untuk melakukan hitung fisik barang di rak:\n${link}`;
+  function renderEmployeeLinks() {
+    const box = document.getElementById('employeeLinksList');
+    if (!box) return;
+    const list = appConfig.employees || [];
+    if (list.length === 0) {
+      box.innerHTML = '<div style="padding:10px; border:1px dashed var(--border); border-radius:8px; color:var(--muted); font-size:0.82rem; text-align:center;">Belum ada karyawan terdaftar. Ketik nama di atas lalu klik <b>Tambah Karyawan</b>.</div>';
+      return;
+    }
+
+    box.innerHTML = '';
+    list.forEach((emp, idx) => {
+      const row = document.createElement('div');
+      row.className = 'emp-row';
+      row.innerHTML = `
+        <div>
+          <strong>${idx + 1}. ${escapeHtml(emp)}</strong>
+          <div style="font-size:0.74rem; color:var(--primary); font-weight:700;">🔒 Link Pribadi Terkunci</div>
+        </div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          <button type="button" class="btn btn-success btn-sm" onclick="sharePersonalLinkWA(${idx})">📲 Kirim WA</button>
+          <button type="button" class="btn btn-outline btn-sm" onclick="copyPersonalLink(${idx})">📋 Salin Link</button>
+          <button type="button" class="btn btn-danger btn-sm" onclick="removeEmployee(${idx})">Hapus</button>
+        </div>
+      `;
+      box.appendChild(row);
+    });
+  }
+
+  function sharePersonalLinkWA(idx) {
+    const emp = (appConfig.employees || [])[idx];
+    if (!emp) return;
+    const link = buildPersonalEmployeeLink(emp);
+    const msg = `📋 *LINK STOCK OPNAME PRIBADI — ${appConfig.kdkmpName.toUpperCase()}*\nHalo *${emp}*, silakan buka tautan khusus Anda di bawah ini untuk menghitung stok barang:\n${link}\n\n_(Tautan ini terkunci khusus atas nama Anda)_`;
     window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
   }
 
-  function copyEmployeeLink() {
-    const link = document.getElementById('employeeShareLink').value;
-    navigator.clipboard.writeText(link).then(() => showToast('📋 Link karyawan disalin!'));
+  function copyPersonalLink(idx) {
+    const emp = (appConfig.employees || [])[idx];
+    if (!emp) return;
+    const link = buildPersonalEmployeeLink(emp);
+    navigator.clipboard.writeText(link).then(() => showToast(`📋 Link pribadi ${emp} disalin!`));
+  }
+
+  async function addNewEmployee() {
+    const input = document.getElementById('newEmpNameInput');
+    const name = input.value.trim().replace(/,/g, '');
+    if (!name) return;
+
+    const current = appConfig.employees || [];
+    if (current.some(x => x.toLowerCase() === name.toLowerCase())) {
+      alert('Nama karyawan tersebut sudah ada di daftar.');
+      return;
+    }
+
+    const updatedList = [...current, name];
+    input.value = '';
+    const activeKey = (document.getElementById('cfgEmpKey').value || appConfig.empKey || 'KDKMP26').trim();
+
+    const res = await postToSheets({
+      action: 'save_config',
+      kdkmpName: document.getElementById('cfgKdkmpName').value.trim() || appConfig.kdkmpName,
+      kdkmpRegion: document.getElementById('cfgKdkmpRegion').value.trim(),
+      managerName: document.getElementById('cfgManagerName').value.trim() || appConfig.managerName,
+      employeesStr: updatedList.join(', '),
+      empKey: activeKey
+    });
+
+    if (res.ok) {
+      showToast(`✅ ${name} ditambahkan & link siap dibagikan!`);
+    }
+  }
+
+  async function removeEmployee(idx) {
+    const current = appConfig.employees || [];
+    const target = current[idx];
+    if (!target) return;
+    if (!confirm(`Hapus "${target}" dari tim? Link akses milik ${target} akan langsung dinonaktifkan.`)) return;
+
+    const updatedList = current.filter((_, i) => i !== idx);
+    const activeKey = (document.getElementById('cfgEmpKey').value || appConfig.empKey || 'KDKMP26').trim();
+
+    const res = await postToSheets({
+      action: 'save_config',
+      kdkmpName: document.getElementById('cfgKdkmpName').value.trim() || appConfig.kdkmpName,
+      kdkmpRegion: document.getElementById('cfgKdkmpRegion').value.trim(),
+      managerName: document.getElementById('cfgManagerName').value.trim() || appConfig.managerName,
+      employeesStr: updatedList.join(', '),
+      empKey: activeKey
+    });
+
+    if (res.ok) {
+      showToast(`🗑️ Akses ${target} dihapus`);
+    }
   }
 
   function applyBrandingUI() {
@@ -863,7 +973,8 @@
     document.getElementById('cfgKdkmpName').value = appConfig.kdkmpName || '';
     document.getElementById('cfgKdkmpRegion').value = appConfig.kdkmpRegion || '';
     document.getElementById('cfgManagerName').value = appConfig.managerName || '';
-    document.getElementById('cfgEmployees').value = (appConfig.employees || []).join(', ');
+    document.getElementById('cfgEmpKey').value = appConfig.empKey || 'KDKMP26';
+    renderEmployeeLinks();
   }
 
   async function unlockDashboard() {
@@ -930,8 +1041,6 @@
     }
   }
 
-let mgrPendingSync = 0;
-
   async function postToSheets(payload) {
     if (typeof navigator !== 'undefined' && navigator.onLine === false) {
       return { ok: false, error: 'Perangkat sedang offline.' };
@@ -940,7 +1049,6 @@ let mgrPendingSync = 0;
     const nowStr = new Date().toLocaleDateString('id-ID') + ' ' +
       new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 
-    // 1. Terapkan langsung di layar Manager
     if (payload.action === 'submit_count') {
       const idx = itemsData.findIndex(x => x.sku === payload.sku);
       if (idx !== -1) {
@@ -994,6 +1102,7 @@ let mgrPendingSync = 0;
       if (payload.employeesStr !== undefined) {
         appConfig.employees = payload.employeesStr.split(',').map(s => s.trim()).filter(Boolean);
       }
+      if (payload.empKey) appConfig.empKey = payload.empKey;
     }
 
     applyServerState({ config: appConfig, items: itemsData, logs: logsData });
@@ -1006,7 +1115,6 @@ let mgrPendingSync = 0;
 
     try {
       if (payload.action !== 'upsert_items') {
-        // Jalur GET agar server mengembalikan konfirmasi asli { ok: true } setelah flush()
         const qs = new URLSearchParams({ action: payload.action, pin: sessionPin });
         if (payload.sku) qs.set('sku', payload.sku);
         if (payload.physStock !== undefined) qs.set('physStock', String(payload.physStock));
@@ -1016,6 +1124,7 @@ let mgrPendingSync = 0;
         if (payload.kdkmpRegion !== undefined) qs.set('kdkmpRegion', payload.kdkmpRegion);
         if (payload.managerName) qs.set('managerName', payload.managerName);
         if (payload.employeesStr !== undefined) qs.set('employeesStr', payload.employeesStr);
+        if (payload.empKey) qs.set('empKey', payload.empKey);
         if (payload.newPin) qs.set('newPin', payload.newPin);
 
         const res = await fetch(`${scriptUrl}?${qs.toString()}`);
@@ -1029,7 +1138,6 @@ let mgrPendingSync = 0;
           sessionPin = String(payload.newPin);
         }
       } else {
-        // Upload produk/foto tetap lewat POST no-cors lalu verifikasi
         await fetch(scriptUrl, {
           method: 'POST',
           mode: 'no-cors',
@@ -1170,12 +1278,9 @@ let mgrPendingSync = 0;
     });
     if (res.ok) {
       showToast('✅ Koreksi tersimpan');
-    } else {
-      alert('Gagal menyimpan: ' + (res.error || 'Unknown error'));
     }
   }
 
-  // BERITA ACARA STOCK OPNAME
   function openBeritaAcaraModal() {
     const now = new Date();
     const romanMonths = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
@@ -1455,8 +1560,6 @@ let mgrPendingSync = 0;
     if (res.ok) {
       resetMasterForm();
       showToast(`💾 SKU ${item.sku} tersimpan`);
-    } else {
-      alert('Gagal menyimpan: ' + (res.error || 'Error'));
     }
   }
 
@@ -1575,25 +1678,25 @@ let mgrPendingSync = 0;
     btn.disabled = true;
     btn.textContent = 'Menyimpan Pengaturan...';
 
+    const newKey = document.getElementById('cfgEmpKey').value.trim() || 'KDKMP26';
     const payload = {
       action: 'save_config',
       kdkmpName: document.getElementById('cfgKdkmpName').value.trim(),
       kdkmpRegion: document.getElementById('cfgKdkmpRegion').value.trim(),
       managerName: document.getElementById('cfgManagerName').value.trim(),
-      employeesStr: document.getElementById('cfgEmployees').value.trim(),
+      employeesStr: (appConfig.employees || []).join(', '),
+      empKey: newKey,
       newPin: document.getElementById('cfgNewPin').value.trim()
     };
 
     const res = await postToSheets(payload);
     btn.disabled = false;
-    btn.textContent = '💾 Simpan Pengaturan ke Google Sheets';
+    btn.textContent = '💾 Simpan Profil & Kode Kunci ke Sheets';
 
     if (res.ok) {
       if (res.pin) sessionPin = res.pin;
       document.getElementById('cfgNewPin').value = '';
-      showToast('✅ Profil KDKMP & daftar tim tersimpan!');
-    } else {
-      alert(res.error || 'Gagal menyimpan pengaturan');
+      showToast('✅ Profil KDKMP & kode kunci link tersimpan!');
     }
   }
 
