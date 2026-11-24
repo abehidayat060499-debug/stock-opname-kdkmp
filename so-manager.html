@@ -172,6 +172,7 @@
     .btn-danger { background: var(--danger); color: #fff; }
     .btn-outline { background: #fff; border-color: var(--border); color: var(--text); }
     .btn-sm { padding: 6px 10px; font-size: 0.78rem; }
+    .btn-xs { padding: 4px 8px; font-size: 0.72rem; border-radius: 6px; }
 
     .toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
 
@@ -307,7 +308,7 @@
       background: #fff;
       border-radius: 14px;
       width: 100%;
-      max-width: 960px;
+      max-width: 980px;
       max-height: 92vh;
       display: flex;
       flex-direction: column;
@@ -331,10 +332,60 @@
       background: #f1f5f9;
       border-bottom: 1px solid var(--border);
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
     }
-    @media (max-width: 768px) { .ba-controls { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 768px) { .ba-controls { grid-template-columns: 1fr; } }
+
+    .ba-participants-panel {
+      grid-column: 1 / -1;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 9px 12px;
+    }
+
+    .ba-participants-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 7px;
+    }
+
+    .ba-participants-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .ba-chk-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1.5px solid var(--border);
+      background: #f8fafc;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .ba-chk-pill input {
+      width: auto;
+      margin: 0;
+      accent-color: var(--primary);
+      cursor: pointer;
+    }
+
+    .ba-chk-pill.checked {
+      background: #f0fdfa;
+      border-color: var(--primary);
+      color: var(--primary-dark);
+    }
 
     .ba-scroll-area {
       padding: 20px;
@@ -348,11 +399,11 @@
       background: #fff;
       max-width: 210mm;
       margin: 0 auto;
-      padding: 16mm 16mm 18mm 16mm;
+      padding: 15mm 16mm 16mm 16mm;
       color: #000;
       font-family: "Times New Roman", Times, Georgia, serif;
-      font-size: 11.5pt;
-      line-height: 1.45;
+      font-size: 11pt;
+      line-height: 1.42;
       box-shadow: 0 4px 14px rgba(0,0,0,0.18);
     }
 
@@ -360,7 +411,7 @@
       text-align: center;
       border-bottom: 3px double #000;
       padding-bottom: 8px;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
     }
     .ba-kop h2 { margin: 0; font-size: 14pt; text-transform: uppercase; letter-spacing: 0.5px; }
     .ba-kop h3 { margin: 2px 0; font-size: 12.5pt; text-transform: uppercase; }
@@ -368,16 +419,16 @@
 
     .ba-title-block {
       text-align: center;
-      margin: 12px 0 14px;
+      margin: 10px 0 12px;
     }
-    .ba-title-block u { font-weight: bold; font-size: 12.5pt; letter-spacing: 0.4px; }
-    .ba-title-block div { font-size: 10.5pt; margin-top: 2px; }
+    .ba-title-block u { font-weight: bold; font-size: 12pt; letter-spacing: 0.4px; }
+    .ba-title-block div { font-size: 10pt; margin-top: 2px; }
 
     .ba-meta-table {
       width: 100%;
       border-collapse: collapse;
-      margin: 8px 0 12px;
-      font-size: 11pt;
+      margin: 6px 0 10px;
+      font-size: 10.5pt;
     }
     .ba-meta-table td {
       border: none;
@@ -387,21 +438,21 @@
 
     .ba-summary-box {
       border: 1px solid #000;
-      padding: 8px 12px;
-      margin: 10px 0 14px;
+      padding: 7px 11px;
+      margin: 8px 0 12px;
       background: #f9fafb;
-      font-size: 10.5pt;
+      font-size: 10pt;
     }
 
     .ba-data-table {
       width: 100%;
       border-collapse: collapse;
-      margin: 10px 0 16px;
-      font-size: 9.5pt;
+      margin: 8px 0 14px;
+      font-size: 9.2pt;
     }
     .ba-data-table th, .ba-data-table td {
       border: 1px solid #000;
-      padding: 5px 6px;
+      padding: 4px 6px;
       text-align: left;
     }
     .ba-data-table th {
@@ -413,17 +464,54 @@
     .ba-data-table td.num { text-align: right; }
     .ba-data-table td.ctr { text-align: center; }
 
-    .ba-sign-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 14px;
-      margin-top: 24px;
+    /* TANDA TANGAN DINAMIS MENYESUAIKAN JUMLAH PESERTA */
+    .ba-sign-wrapper {
+      margin-top: 18px;
+      page-break-inside: avoid;
       text-align: center;
-      font-size: 10.5pt;
+    }
+
+    .ba-sign-section-label {
+      font-weight: bold;
+      margin-bottom: 8px;
+      text-decoration: underline;
+    }
+
+    .ba-exec-grid {
+      display: grid;
+      align-items: start;
+      text-align: center;
+    }
+
+    .ba-leader-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-top: 14px;
+      padding-top: 10px;
+      border-top: 1px dashed #9ca3af;
+      text-align: center;
       page-break-inside: avoid;
     }
 
-    .ba-sign-space { height: 62px; }
+    .ba-sign-cell {
+      padding: 2px 4px;
+      word-break: break-word;
+    }
+
+    /* Skala ukuran otomatis */
+    .ba-sign-wrapper.scale-normal { font-size: 10pt; }
+    .ba-sign-wrapper.scale-normal .ba-exec-grid { gap: 14px; }
+    .ba-sign-wrapper.scale-normal .ba-sign-space { height: 56px; }
+
+    .ba-sign-wrapper.scale-medium { font-size: 9.2pt; }
+    .ba-sign-wrapper.scale-medium .ba-exec-grid { gap: 10px 8px; }
+    .ba-sign-wrapper.scale-medium .ba-sign-space { height: 46px; }
+
+    .ba-sign-wrapper.scale-compact { font-size: 8.4pt; line-height: 1.28; }
+    .ba-sign-wrapper.scale-compact .ba-exec-grid { gap: 10px 6px; }
+    .ba-sign-wrapper.scale-compact .ba-sign-space { height: 38px; }
+    .ba-sign-wrapper.scale-compact .ba-leader-grid { margin-top: 10px; padding-top: 8px; }
 
     .toast {
       position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
@@ -470,7 +558,7 @@
         width: 100% !important;
         max-width: 100% !important;
         margin: 0 !important;
-        padding: 15mm 16mm !important;
+        padding: 14mm 15mm !important;
         box-shadow: none !important;
       }
 
@@ -752,7 +840,7 @@
     <div class="ba-modal-top">
       <div>
         <strong style="font-size:1.05rem;">📄 Berita Acara Stock Opname Fisik</strong>
-        <div style="font-size:0.78rem; color:var(--muted);">Sesuaikan opsi di bawah lalu klik Cetak / Simpan PDF</div>
+        <div style="font-size:0.78rem; color:var(--muted);">Ukuran & kolom tanda tangan otomatis menyesuaikan jumlah tim yang ikut serta</div>
       </div>
       <div style="display:flex; gap:8px; flex-wrap:wrap;">
         <button class="btn btn-primary" onclick="executePrintBA()">🖨️ Cetak / Simpan PDF</button>
@@ -766,10 +854,6 @@
         <input type="text" id="baDocNumber" oninput="renderBeritaAcaraDoc()" />
       </div>
       <div class="form-group">
-        <label>Saksi / Petugas Pelaksana SO</label>
-        <select id="baWitnessSelect" onchange="renderBeritaAcaraDoc()"></select>
-      </div>
-      <div class="form-group">
         <label>Jabatan & Nama Pengawas (Opsional)</label>
         <input type="text" id="baSupervisorName" placeholder="Contoh: Ketua Pengurus / Pengawas" oninput="renderBeritaAcaraDoc()" />
       </div>
@@ -780,6 +864,19 @@
           <option value="DIFF_ONLY">Khusus Barang Selisih Saja</option>
           <option value="ALL_MASTER">Seluruh Master SKU</option>
         </select>
+      </div>
+
+      <div class="ba-participants-panel">
+        <div class="ba-participants-header">
+          <span style="font-size:0.78rem; font-weight:700; color:#334155;">
+            ✍️ Tim Pelaksana SO yang Ikut Tanda Tangan (<span id="baSelectedCount">0</span> orang):
+          </span>
+          <div style="display:flex; gap:6px;">
+            <button type="button" class="btn btn-outline btn-xs" onclick="selectBaParticipants('ACTIVE')">Yang Ikut Hitung</button>
+            <button type="button" class="btn btn-outline btn-xs" onclick="selectBaParticipants('ALL')">Pilih Semua</button>
+          </div>
+        </div>
+        <div id="baParticipantsList" class="ba-participants-list"></div>
       </div>
     </div>
 
@@ -1281,6 +1378,18 @@
     }
   }
 
+  function getActiveAuditorsSet() {
+    const active = new Set();
+    itemsData.forEach(item => {
+      const hasPhys = item.physStock !== null && item.physStock !== undefined;
+      const aud = String(item.auditor || '').trim();
+      if (hasPhys && aud && !aud.toLowerCase().startsWith('manager')) {
+        active.add(aud.toLowerCase());
+      }
+    });
+    return active;
+  }
+
   function openBeritaAcaraModal() {
     const now = new Date();
     const romanMonths = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
@@ -1291,29 +1400,69 @@
 
     document.getElementById('baDocNumber').value = `BA-SO/${codePrefix}/${mRoman}/${year}/${dayPad}`;
 
-    const witnessSel = document.getElementById('baWitnessSelect');
-    witnessSel.innerHTML = '<option value="Tim Pelaksana SO Gerai">Tim Pelaksana SO Gerai</option>';
-    (appConfig.employees || []).forEach(emp => {
-      const opt = document.createElement('option');
-      opt.value = emp;
-      opt.textContent = emp;
-      witnessSel.appendChild(opt);
+    // Gabungkan daftar karyawan terdaftar + petugas lapangan yang tercatat di item
+    const allCandidates = [...(appConfig.employees || [])];
+    const activeSet = getActiveAuditorsSet();
+
+    itemsData.forEach(item => {
+      const aud = String(item.auditor || '').trim();
+      if (aud && !aud.toLowerCase().startsWith('manager')) {
+        if (!allCandidates.some(x => x.toLowerCase() === aud.toLowerCase())) {
+          allCandidates.push(aud);
+        }
+      }
     });
 
-    const auditors = itemsData.map(i => i.auditor).filter(a => a && !a.startsWith('Manager'));
-    if (auditors.length > 0) {
-      const topAuditor = auditors[0];
-      const exists = Array.from(witnessSel.options).some(o => o.value === topAuditor);
-      if (!exists) {
-        const opt = document.createElement('option');
-        opt.value = topAuditor;
-        opt.textContent = topAuditor;
-        witnessSel.appendChild(opt);
-      }
-      witnessSel.value = topAuditor;
+    const listBox = document.getElementById('baParticipantsList');
+    listBox.innerHTML = '';
+
+    if (allCandidates.length === 0) {
+      listBox.innerHTML = '<span style="font-size:0.78rem; color:var(--muted);">Belum ada anggota tim terdaftar.</span>';
+    } else {
+      const hasAnyActive = activeSet.size > 0;
+      allCandidates.forEach(name => {
+        const isActive = activeSet.has(name.toLowerCase());
+        const shouldCheck = hasAnyActive ? isActive : true;
+
+        const label = document.createElement('label');
+        label.className = 'ba-chk-pill' + (shouldCheck ? ' checked' : '');
+        label.innerHTML = `
+          <input type="checkbox" value="${escapeHtml(name)}" ${shouldCheck ? 'checked' : ''} onchange="onBaParticipantToggle(this)" />
+          <span>${escapeHtml(name)}</span>
+          ${isActive ? '<small style="color:#0f766e;">✓</small>' : ''}
+        `;
+        listBox.appendChild(label);
+      });
     }
 
     document.getElementById('baModal').classList.add('open');
+    renderBeritaAcaraDoc();
+  }
+
+  function onBaParticipantToggle(chk) {
+    const pill = chk.closest('.ba-chk-pill');
+    if (pill) {
+      if (chk.checked) pill.classList.add('checked');
+      else pill.classList.remove('checked');
+    }
+    renderBeritaAcaraDoc();
+  }
+
+  function selectBaParticipants(mode) {
+    const activeSet = getActiveAuditorsSet();
+    const checkboxes = document.querySelectorAll('#baParticipantsList input[type="checkbox"]');
+    checkboxes.forEach(chk => {
+      if (mode === 'ALL') {
+        chk.checked = true;
+      } else {
+        chk.checked = activeSet.size > 0 ? activeSet.has(chk.value.toLowerCase()) : true;
+      }
+      const pill = chk.closest('.ba-chk-pill');
+      if (pill) {
+        if (chk.checked) pill.classList.add('checked');
+        else pill.classList.remove('checked');
+      }
+    });
     renderBeritaAcaraDoc();
   }
 
@@ -1323,10 +1472,16 @@
 
   function renderBeritaAcaraDoc() {
     const docNum = document.getElementById('baDocNumber').value.trim() || '-';
-    const witnessName = document.getElementById('baWitnessSelect').value || 'Tim Pelaksana SO';
     const supervisorText = document.getElementById('baSupervisorName').value.trim();
     const scope = document.getElementById('baRowScope').value;
     const zFilter = document.getElementById('auditZoneFilter').value;
+
+    const selectedSigners = Array.from(
+      document.querySelectorAll('#baParticipantsList input[type="checkbox"]:checked')
+    ).map(el => el.value.trim()).filter(Boolean);
+
+    const countBadge = document.getElementById('baSelectedCount');
+    if (countBadge) countBadge.textContent = selectedSigners.length;
 
     const now = new Date();
     const daysId = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
@@ -1384,6 +1539,90 @@
 
     const areaLabel = zFilter === 'ALL' ? 'Seluruh Zona Gerai' : `Zona ${zFilter}`;
     const supervisorLabel = supervisorText || '( .................................... )';
+    const cityLabel = (appConfig.kdkmpRegion || '').split(',').pop().trim() || 'Cianjur';
+
+    // Narasi daftar pelaksana di bagian atas BA
+    const executorMetaText = selectedSigners.length === 0
+      ? '<b>Tim Pelaksana Stock Opname Gerai</b>'
+      : selectedSigners.length === 1
+        ? `<b>${escapeHtml(selectedSigners[0])}</b>`
+        : `<b>${selectedSigners.map(escapeHtml).join(', ')}</b> (${selectedSigners.length} Petugas Pelaksana SO)`;
+
+    // Susunan & skala tanda tangan dinamis menyesuaikan jumlah peserta SO
+    let signaturesHtml = '';
+    const n = selectedSigners.length;
+
+    if (n <= 1) {
+      const singleSigner = n === 1 ? escapeHtml(selectedSigners[0]) : 'Tim Pelaksana SO';
+      signaturesHtml = `
+        <div class="ba-sign-wrapper scale-normal">
+          <div class="ba-exec-grid" style="grid-template-columns: repeat(3, 1fr);">
+            <div class="ba-sign-cell">
+              <div>Pelaksana / Saksi SO,</div>
+              <div class="ba-sign-space"></div>
+              <div><b><u>${singleSigner}</u></b></div>
+              <div style="font-size:0.9em;">Tim Operasional Gerai</div>
+            </div>
+            <div class="ba-sign-cell">
+              <div>Mengetahui,</div>
+              <div class="ba-sign-space"></div>
+              <div><b>${escapeHtml(supervisorLabel)}</b></div>
+              <div style="font-size:0.9em;">Pengurus / Pengawas Koperasi</div>
+            </div>
+            <div class="ba-sign-cell">
+              <div>${escapeHtml(cityLabel)}, ${fullDateStr}</div>
+              <div>Manager Gerai,</div>
+              <div class="ba-sign-space" style="height:40px;"></div>
+              <div><b><u>${escapeHtml(appConfig.managerName)}</u></b></div>
+              <div style="font-size:0.9em;">Manager ${escapeHtml(appConfig.kdkmpName)}</div>
+            </div>
+          </div>
+        </div>
+      `;
+    } else {
+      let scaleClass = 'scale-normal';
+      if (n === 3 || n === 4) scaleClass = 'scale-medium';
+      else if (n >= 5) scaleClass = 'scale-compact';
+
+      let cols = 2;
+      if (n === 2) cols = 2;
+      else if (n === 3 || n === 5 || n === 6) cols = 3;
+      else if (n === 4 || n >= 7) cols = 4;
+
+      const execCells = selectedSigners.map((person, idx) => `
+        <div class="ba-sign-cell">
+          <div>Petugas SO ${idx + 1},</div>
+          <div class="ba-sign-space"></div>
+          <div><b><u>${escapeHtml(person)}</u></b></div>
+          <div style="font-size:0.88em;">Tim Operasional</div>
+        </div>
+      `).join('');
+
+      signaturesHtml = `
+        <div class="ba-sign-wrapper ${scaleClass}">
+          <div class="ba-sign-section-label">Tim Pelaksana Stock Opname (${n} Orang):</div>
+          <div class="ba-exec-grid" style="grid-template-columns: repeat(${cols}, 1fr);">
+            ${execCells}
+          </div>
+
+          <div class="ba-leader-grid">
+            <div class="ba-sign-cell">
+              <div>Mengetahui,</div>
+              <div class="ba-sign-space"></div>
+              <div><b>${escapeHtml(supervisorLabel)}</b></div>
+              <div style="font-size:0.9em;">Pengurus / Pengawas Koperasi</div>
+            </div>
+            <div class="ba-sign-cell">
+              <div>${escapeHtml(cityLabel)}, ${fullDateStr}</div>
+              <div>Manager Gerai,</div>
+              <div class="ba-sign-space" style="height:36px;"></div>
+              <div><b><u>${escapeHtml(appConfig.managerName)}</u></b></div>
+              <div style="font-size:0.9em;">Manager ${escapeHtml(appConfig.kdkmpName)}</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
 
     document.getElementById('baPaperDocument').innerHTML = `
       <div class="ba-kop">
@@ -1410,9 +1649,9 @@
           <td><b>${escapeHtml(appConfig.managerName)}</b> (Manager Gerai ${escapeHtml(appConfig.kdkmpName)})</td>
         </tr>
         <tr>
-          <td>2. Pelaksana / Saksi SO</td>
+          <td>2. Tim Pelaksana SO</td>
           <td>:</td>
-          <td><b>${escapeHtml(witnessName)}</b></td>
+          <td>${executorMetaText}</td>
         </tr>
       </table>
 
@@ -1442,32 +1681,12 @@
         </tbody>
       </table>
 
-      <p style="margin:8px 0 0;">
+      <p style="margin:6px 0 0;">
         Demikian Berita Acara Hasil <i>Stock Opname</i> ini dibuat dengan sebenar-benarnya berdasarkan hasil penghitungan fisik
         di lapangan untuk dipergunakan sebagai dasar penyesuaian pencatatan stok dan pertanggungjawaban administrasi koperasi.
       </p>
 
-      <div class="ba-sign-grid">
-        <div>
-          <div>Pelaksana / Saksi SO,</div>
-          <div class="ba-sign-space"></div>
-          <div><b><u>${escapeHtml(witnessName)}</u></b></div>
-          <div style="font-size:9.5pt;">Tim Operasional Gerai</div>
-        </div>
-        <div>
-          <div>Mengetahui,</div>
-          <div class="ba-sign-space"></div>
-          <div><b>${escapeHtml(supervisorLabel)}</b></div>
-          <div style="font-size:9.5pt;">Pengurus / Pengawas Koperasi</div>
-        </div>
-        <div>
-          <div>${escapeHtml((appConfig.kdkmpRegion || '').split(',').pop().trim() || 'Cianjur')}, ${fullDateStr}</div>
-          <div>Manager Gerai,</div>
-          <div class="ba-sign-space" style="height:44px;"></div>
-          <div><b><u>${escapeHtml(appConfig.managerName)}</u></b></div>
-          <div style="font-size:9.5pt;">Manager ${escapeHtml(appConfig.kdkmpName)}</div>
-        </div>
-      </div>
+      ${signaturesHtml}
     `;
   }
 
