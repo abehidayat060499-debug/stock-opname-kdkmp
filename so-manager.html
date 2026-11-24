@@ -940,7 +940,7 @@ let mgrPendingSync = 0;
     const nowStr = new Date().toLocaleDateString('id-ID') + ' ' +
       new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 
-    // 1. Terapkan perubahan langsung di layar Manager secara instan
+    // 1. Terapkan langsung di layar Manager
     if (payload.action === 'submit_count') {
       const idx = itemsData.findIndex(x => x.sku === payload.sku);
       if (idx !== -1) {
@@ -994,38 +994,65 @@ let mgrPendingSync = 0;
       if (payload.employeesStr !== undefined) {
         appConfig.employees = payload.employeesStr.split(',').map(s => s.trim()).filter(Boolean);
       }
-      if (payload.newPin && /^\d{4,6}$/.test(String(payload.newPin))) {
-        sessionPin = String(payload.newPin);
-      }
     }
 
     applyServerState({ config: appConfig, items: itemsData, logs: logsData });
 
-    // 2. Kirim ke Google Sheets di latar belakang tanpa jeda tunggu
     mgrPendingSync++;
     const statusEl = document.getElementById('syncStatus');
+    const refBtn = document.getElementById('refreshBtn');
     statusEl.textContent = `⏳ Menyinkronkan (${mgrPendingSync})...`;
+    if (refBtn) refBtn.disabled = true;
 
-    fetch(scriptUrl, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ ...payload, pin: sessionPin })
-    })
-      .then(() => {
-        mgrPendingSync = Math.max(0, mgrPendingSync - 1);
-        if (mgrPendingSync === 0) {
-          statusEl.textContent = '🟢 Sheets Live (' +
-            new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ')';
+    try {
+      if (payload.action !== 'upsert_items') {
+        // Jalur GET agar server mengembalikan konfirmasi asli { ok: true } setelah flush()
+        const qs = new URLSearchParams({ action: payload.action, pin: sessionPin });
+        if (payload.sku) qs.set('sku', payload.sku);
+        if (payload.physStock !== undefined) qs.set('physStock', String(payload.physStock));
+        if (payload.auditor) qs.set('auditor', payload.auditor);
+        if (payload.note !== undefined) qs.set('note', payload.note);
+        if (payload.kdkmpName) qs.set('kdkmpName', payload.kdkmpName);
+        if (payload.kdkmpRegion !== undefined) qs.set('kdkmpRegion', payload.kdkmpRegion);
+        if (payload.managerName) qs.set('managerName', payload.managerName);
+        if (payload.employeesStr !== undefined) qs.set('employeesStr', payload.employeesStr);
+        if (payload.newPin) qs.set('newPin', payload.newPin);
+
+        const res = await fetch(`${scriptUrl}?${qs.toString()}`);
+        const json = await res.json();
+        if (!json.ok) {
+          alert('Gagal memproses di Google Sheets: ' + (json.error || 'Error'));
+          await fetchCloudData(false);
+          return { ok: false, error: json.error };
         }
-      })
-      .catch(() => {
-        mgrPendingSync = Math.max(0, mgrPendingSync - 1);
-        statusEl.textContent = '🟡 Gagal Kirim';
-        showToast('⚠️ Gagal menyinkronkan ke Google Sheets');
-      });
+        if (payload.action === 'save_config' && payload.newPin && /^\d{4,6}$/.test(String(payload.newPin))) {
+          sessionPin = String(payload.newPin);
+        }
+      } else {
+        // Upload produk/foto tetap lewat POST no-cors lalu verifikasi
+        await fetch(scriptUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ ...payload, pin: sessionPin })
+        });
+        await new Promise(r => setTimeout(r, 1200));
+        await fetchCloudData(false);
+      }
 
-    return { ok: true, pin: sessionPin };
+      return { ok: true, pin: sessionPin };
+    } catch (err) {
+      statusEl.textContent = '🟡 Gagal Kirim';
+      showToast('⚠️ Gagal menyinkronkan ke Google Sheets');
+      return { ok: false, error: 'Koneksi terputus saat menyinkronkan.' };
+    } finally {
+      mgrPendingSync = Math.max(0, mgrPendingSync - 1);
+      if (mgrPendingSync === 0) {
+        if (refBtn) refBtn.disabled = false;
+        statusEl.textContent = '🟢 Sheets Live (' +
+          new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ')';
+      }
+    }
   }
 
   function switchTab(name, btn) {
