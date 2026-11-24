@@ -930,33 +930,102 @@
     }
   }
 
+let mgrPendingSync = 0;
+
   async function postToSheets(payload) {
     if (typeof navigator !== 'undefined' && navigator.onLine === false) {
       return { ok: false, error: 'Perangkat sedang offline.' };
     }
-    const statusEl = document.getElementById('syncStatus');
-    statusEl.textContent = '⏳ Menyimpan...';
 
-    try {
-      // mode: 'no-cors' agar Safari iPhone tidak error saat Google Apps Script redirect 302
-      await fetch(scriptUrl, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ ...payload, pin: sessionPin })
+    const nowStr = new Date().toLocaleDateString('id-ID') + ' ' +
+      new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+    // 1. Terapkan perubahan langsung di layar Manager secara instan
+    if (payload.action === 'submit_count') {
+      const idx = itemsData.findIndex(x => x.sku === payload.sku);
+      if (idx !== -1) {
+        itemsData[idx].physStock = payload.physStock;
+        itemsData[idx].auditor = payload.auditor;
+        itemsData[idx].note = payload.note || '';
+        itemsData[idx].updatedAt = nowStr;
+        logsData.unshift({
+          time: nowStr,
+          auditor: payload.auditor,
+          sku: payload.sku,
+          name: itemsData[idx].name,
+          physStock: payload.physStock,
+          note: payload.note || ''
+        });
+      }
+    } else if (payload.action === 'upsert_items') {
+      (payload.items || []).forEach(incoming => {
+        const idx = itemsData.findIndex(x => x.sku === incoming.sku);
+        if (idx !== -1) {
+          const keepPhoto = incoming.keepExistingPhoto && !incoming.photo ? itemsData[idx].photo : incoming.photo;
+          itemsData[idx] = { ...itemsData[idx], ...incoming, photo: keepPhoto || '' };
+        } else {
+          itemsData.push({
+            ...incoming,
+            physStock: null,
+            auditor: '',
+            note: '',
+            updatedAt: ''
+          });
+        }
       });
-
-      if (payload.action === 'save_config' && payload.newPin && /^\d{4,6}$/.test(String(payload.newPin))) {
+    } else if (payload.action === 'delete_item') {
+      itemsData = itemsData.filter(x => x.sku !== payload.sku);
+    } else if (payload.action === 'sync_sys_stock') {
+      itemsData.forEach(x => {
+        if (x.physStock !== null && x.physStock !== undefined) x.sysStock = x.physStock;
+      });
+    } else if (payload.action === 'reset_counts') {
+      itemsData.forEach(x => {
+        x.physStock = null;
+        x.auditor = '';
+        x.note = '';
+        x.updatedAt = '';
+      });
+      logsData = [];
+    } else if (payload.action === 'save_config') {
+      if (payload.kdkmpName) appConfig.kdkmpName = payload.kdkmpName;
+      if (payload.kdkmpRegion !== undefined) appConfig.kdkmpRegion = payload.kdkmpRegion;
+      if (payload.managerName) appConfig.managerName = payload.managerName;
+      if (payload.employeesStr !== undefined) {
+        appConfig.employees = payload.employeesStr.split(',').map(s => s.trim()).filter(Boolean);
+      }
+      if (payload.newPin && /^\d{4,6}$/.test(String(payload.newPin))) {
         sessionPin = String(payload.newPin);
       }
-
-      await new Promise(r => setTimeout(r, 900));
-      await fetchCloudData(false);
-      return { ok: true, pin: sessionPin };
-    } catch (err) {
-      statusEl.textContent = '🟡 Gagal Kirim';
-      return { ok: false, error: 'Koneksi internet terputus saat menyimpan.' };
     }
+
+    applyServerState({ config: appConfig, items: itemsData, logs: logsData });
+
+    // 2. Kirim ke Google Sheets di latar belakang tanpa jeda tunggu
+    mgrPendingSync++;
+    const statusEl = document.getElementById('syncStatus');
+    statusEl.textContent = `⏳ Menyinkronkan (${mgrPendingSync})...`;
+
+    fetch(scriptUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ ...payload, pin: sessionPin })
+    })
+      .then(() => {
+        mgrPendingSync = Math.max(0, mgrPendingSync - 1);
+        if (mgrPendingSync === 0) {
+          statusEl.textContent = '🟢 Sheets Live (' +
+            new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ')';
+        }
+      })
+      .catch(() => {
+        mgrPendingSync = Math.max(0, mgrPendingSync - 1);
+        statusEl.textContent = '🟡 Gagal Kirim';
+        showToast('⚠️ Gagal menyinkronkan ke Google Sheets');
+      });
+
+    return { ok: true, pin: sessionPin };
   }
 
   function switchTab(name, btn) {
