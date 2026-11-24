@@ -588,7 +588,9 @@
     el.value = el.value.length <= 1 ? '0' : el.value.slice(0, -1);
   }
 
-  async function submitItemCount() {
+let pendingSyncCount = 0;
+
+  function submitItemCount() {
     if (!activeItem) return;
     const auditor = document.getElementById('auditorSelect').value.trim();
     if (!auditor) {
@@ -605,48 +607,52 @@
     const note = document.getElementById('noteInput').value.trim();
     const targetSku = activeItem.sku;
     const targetUnit = activeItem.unit;
-    const btn = document.getElementById('submitCountBtn');
-    btn.disabled = true;
-    btn.textContent = 'Menyimpan...';
 
-    try {
-      // mode: 'no-cors' mencegah Safari iPhone error saat Google Apps Script melakukan redirect 302
-      await fetch(scriptUrl, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({
-          action: 'submit_count',
-          sku: targetSku,
-          physStock,
-          auditor,
-          note
-        })
-      });
-
-      // Perbarui status item di layar & cache HP secara langsung
-      const idx = itemsList.findIndex(x => x.sku === targetSku);
-      if (idx !== -1) {
-        itemsList[idx].physStock = physStock;
-        itemsList[idx].auditor = auditor;
-        itemsList[idx].note = note;
-      }
-      try {
-        localStorage.setItem(EMP_CACHE_KEY, JSON.stringify({ config: appConfig, items: itemsList }));
-      } catch (e) {}
-
-      renderItemsList();
-      closeCountModal();
-      showToast(`✅ Tersimpan (${physStock} ${targetUnit})`);
-
-      // Sinkronisasi ringan di latar belakang setelah 1.2 detik
-      setTimeout(() => loadCloudItems(false), 1200);
-    } catch (err) {
-      alert('Koneksi terputus saat menyimpan. Periksa jaringan internet lalu coba lagi.');
-    } finally {
-      btn.disabled = false;
-      btn.textContent = '💾 Simpan Hasil Hitung Fisik';
+    // 1. Langsung perbarui tampilan & cache HP tanpa menunggu server (0 detik)
+    const idx = itemsList.findIndex(x => x.sku === targetSku);
+    if (idx !== -1) {
+      itemsList[idx].physStock = physStock;
+      itemsList[idx].auditor = auditor;
+      itemsList[idx].note = note;
     }
+    try {
+      localStorage.setItem(EMP_CACHE_KEY, JSON.stringify({ config: appConfig, items: itemsList }));
+    } catch (e) {}
+
+    renderItemsList();
+    closeCountModal();
+    showToast(`✅ Tersimpan (${physStock} ${targetUnit})`);
+
+    // 2. Kirim ke Google Sheets secara senyap di latar belakang
+    pendingSyncCount++;
+    const subEl = document.getElementById('headerSub');
+    subEl.textContent = `⏳ Menyinkronkan (${pendingSyncCount})...`;
+
+    fetch(scriptUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        action: 'submit_count',
+        sku: targetSku,
+        physStock,
+        auditor,
+        note
+      })
+    })
+      .then(() => {
+        pendingSyncCount = Math.max(0, pendingSyncCount - 1);
+        if (pendingSyncCount === 0) {
+          subEl.textContent = `🟢 Semua tersimpan • ${appConfig.kdkmpRegion || ''}`;
+        } else {
+          subEl.textContent = `⏳ Menyinkronkan (${pendingSyncCount})...`;
+        }
+      })
+      .catch(() => {
+        pendingSyncCount = Math.max(0, pendingSyncCount - 1);
+        subEl.textContent = '🔴 Gagal sinkron ke server';
+        alert(`⚠️ Data ${targetSku} gagal terkirim ke Google Sheets. Periksa sinyal lalu tekan Refresh dan input ulang.`);
+      });
   }
 
   function toggleScanner() {
