@@ -396,6 +396,7 @@
       font-weight: bold;
       text-align: center;
     }
+    .ba-data-table tr { page-break-inside: avoid; }
     .ba-data-table td.num { text-align: right; }
     .ba-data-table td.ctr { text-align: center; }
 
@@ -409,9 +410,7 @@
       page-break-inside: avoid;
     }
 
-    .ba-sign-space {
-      height: 62px;
-    }
+    .ba-sign-space { height: 62px; }
 
     .toast {
       position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
@@ -421,36 +420,54 @@
     }
     .toast.show { opacity: 1; }
 
-    /* PRINT STYLES */
+    /* PRINT STYLES — HILANGKAN HEADER/FOOTER BROWSER & DUKUNG MULTI-HALAMAN */
+    @page {
+      size: A4 portrait;
+      margin: 0;
+    }
+
     @media print {
-      body * { visibility: hidden; }
-      body.print-ba #baPaperDocument,
-      body.print-ba #baPaperDocument * {
-        visibility: visible;
+      body { background: #fff !important; margin: 0 !important; padding: 0 !important; }
+      .no-print, #lockScreen, header, .nav-tabs, .toast { display: none !important; }
+
+      body.print-ba .container { display: none !important; }
+      body.print-ba #baModal {
+        display: block !important;
+        position: static !important;
+        background: none !important;
+        padding: 0 !important;
+      }
+      body.print-ba .ba-modal-box {
+        box-shadow: none !important;
+        max-width: 100% !important;
+        max-height: none !important;
+        border-radius: 0 !important;
+        overflow: visible !important;
+      }
+      body.print-ba .ba-modal-top,
+      body.print-ba .ba-controls {
+        display: none !important;
+      }
+      body.print-ba .ba-scroll-area {
+        padding: 0 !important;
+        background: #fff !important;
+        overflow: visible !important;
       }
       body.print-ba #baPaperDocument {
-        position: fixed;
-        left: 0;
-        top: 0;
-        width: 100%;
-        max-width: 100%;
-        margin: 0;
-        padding: 10mm;
-        box-shadow: none;
+        position: static !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 15mm 16mm !important;
+        box-shadow: none !important;
       }
 
-      body.print-qr #qrContainer,
-      body.print-qr #qrContainer * {
-        visibility: visible;
-      }
-      body.print-qr #qrContainer {
-        position: fixed;
-        left: 0;
-        top: 0;
-        width: 100%;
-        padding: 8mm;
-      }
-      .no-print { display: none !important; }
+      body.print-qr #baModal,
+      body.print-qr #tab-audit,
+      body.print-qr #tab-settings { display: none !important; }
+      body.print-qr .container { max-width: 100% !important; padding: 10mm !important; }
+      body.print-qr .grid-2 { display: block !important; }
+      body.print-qr .card { border: none !important; padding: 0 !important; }
     }
   </style>
 </head>
@@ -473,7 +490,7 @@
   </div>
   <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
     <span id="syncStatus" class="sync-pill">🟢 Terhubung Sheets</span>
-    <button class="btn btn-accent btn-sm" onclick="fetchCloudData(true)">🔄 Refresh Live</button>
+    <button id="refreshBtn" class="btn btn-accent btn-sm" onclick="fetchCloudData(true)">🔄 Refresh Live</button>
     <button class="btn btn-danger btn-sm" onclick="lockDashboard()">🔒 Kunci</button>
   </div>
 </header>
@@ -605,7 +622,7 @@
                 <img id="photoPreviewImg" src="" alt="Preview" style="width:68px; height:68px; object-fit:cover; border-radius:8px; border:1px solid var(--border); display:none;" />
                 <div style="flex:1; min-width:180px;">
                   <input type="file" id="mPhotoFile" accept="image/*" onchange="handlePhotoUpload(event)" style="font-size:0.8rem; padding:4px;" />
-                  <small style="display:block; color:var(--muted); margin-top:4px;">Otomatis dikompres ringan (220px) agar cepat dimuat di HP tim.</small>
+                  <small style="display:block; color:var(--muted); margin-top:4px;">Otomatis dikompres ringan (160px) agar cepat disimpan & dimuat.</small>
                   <button type="button" id="clearPhotoBtn" class="btn btn-outline btn-sm" style="margin-top:6px; display:none;" onclick="clearSelectedPhoto()">🗑️ Hapus Foto</button>
                 </div>
               </div>
@@ -643,7 +660,7 @@
       <div class="card">
         <h3 style="margin-top:0;">🏢 Profil KDKMP & Daftar Karyawan</h3>
         <p style="font-size:0.82rem; color:var(--muted); margin-top:0;">
-          Ubah identitas di bawah ini untuk menyesuaikan seluruh tampilan aplikasi, Berita Acara cetak, label QR, daftar pilihan petugas di HP tim, dan laporan CSV.
+          Daftar nama di bawah ini menjadi pilihan tunggal di HP tim karyawan (tanpa opsi input nama bebas).
         </p>
 
         <div class="form-group" style="margin-bottom:10px;">
@@ -759,11 +776,13 @@
 <div id="toast" class="toast"></div>
 
 <script>
-  // TEMPEL URL WEB APP GOOGLE APPS SCRIPT ANDA DI BAWAH INI:
   const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxABcWnvWaUzGPmLCmOvOABs8WwCbhN73rlCxEbgtA35WzH1a-c8EL5Cfg0xR8Cs0ye/exec';
-  const EMPLOYEE_PAGE_URL = 'https://abehidayat060499-debug.github.io/stock-opname-kdkmp/so-karyawan.html](https://abehidayat060499-debug.github.io/stock-opname-kdkmp/so-karyawan.html';
+  const EMPLOYEE_PAGE_URL = window.location.protocol.startsWith('http')
+    ? new URL('so-karyawan.html', window.location.href).href
+    : 'https://abehidayat060499-debug.github.io/stock-opname-kdkmp/so-karyawan.html';
 
-  const LOCAL_CFG_KEY = 'kdkmp_mgr_cloud_cfg_v2';
+  const LOCAL_CFG_KEY = 'kdkmp_mgr_cloud_cfg_v3';
+  const LOCAL_DATA_CACHE_KEY = 'kdkmp_mgr_data_cache_v3';
   let scriptUrl = '';
   let sessionPin = '';
   let appConfig = {
@@ -779,10 +798,30 @@
 
   function init() {
     const savedCfg = JSON.parse(localStorage.getItem(LOCAL_CFG_KEY) || '{}');
-    scriptUrl = savedCfg.scriptUrl || (DEFAULT_SCRIPT_URL !== 'PASTE_URL_WEB_APP_ANDA_DI_SINI' ? DEFAULT_SCRIPT_URL : '');
+    scriptUrl = savedCfg.scriptUrl || DEFAULT_SCRIPT_URL;
     document.getElementById('scriptUrlInput').value = scriptUrl;
     updateShareLink();
     setTimeout(() => document.getElementById('loginPin').focus(), 100);
+  }
+
+  function applyServerState(payload) {
+    if (!payload) return;
+    if (payload.config) appConfig = payload.config;
+    if (Array.isArray(payload.items)) itemsData = payload.items;
+    if (Array.isArray(payload.logs)) logsData = payload.logs;
+
+    try {
+      localStorage.setItem(LOCAL_DATA_CACHE_KEY, JSON.stringify({
+        config: appConfig,
+        items: itemsData,
+        logs: logsData
+      }));
+    } catch (e) {}
+
+    applyBrandingUI();
+    renderAll();
+    document.getElementById('syncStatus').textContent =
+      '🟢 Sheets Live (' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ')';
   }
 
   function saveScriptUrl() {
@@ -831,36 +870,27 @@
     const pin = document.getElementById('loginPin').value.trim();
     if (!pin) return;
 
-    if (!scriptUrl) {
-      if (pin === '1234') {
-        sessionPin = pin;
-        document.getElementById('lockScreen').style.display = 'none';
-        switchTab('settings', document.querySelectorAll('.nav-tab')[2]);
-        alert('Silakan tempel URL Web App Google Apps Script Anda terlebih dahulu pada kolom Koneksi URL.');
-        return;
-      } else {
-        showToast('❌ PIN Salah (Default: 1234)');
-        return;
-      }
-    }
-
     const btn = document.getElementById('loginBtn');
     btn.disabled = true;
-    btn.textContent = 'Memverifikasi ke Sheets...';
+    btn.textContent = 'Memverifikasi PIN...';
+
+    // Muat cache lokal lebih dulu agar layar langsung siap begitu PIN lolos
+    const cached = JSON.parse(localStorage.getItem(LOCAL_DATA_CACHE_KEY) || 'null');
+    if (cached && cached.items) {
+      appConfig = cached.config || appConfig;
+      itemsData = cached.items || [];
+      logsData = cached.logs || [];
+    }
 
     try {
       const res = await fetch(`${scriptUrl}?action=get_items&role=manager&pin=${encodeURIComponent(pin)}`);
       const json = await res.json();
       if (json.ok) {
         sessionPin = pin;
-        appConfig = json.config || appConfig;
-        itemsData = json.items || [];
-        logsData = json.logs || [];
         document.getElementById('lockScreen').style.display = 'none';
         document.getElementById('loginPin').value = '';
-        applyBrandingUI();
-        renderAll();
-        showToast('✅ Berhasil terhubung ke Google Sheets!');
+        applyServerState(json);
+        showToast('✅ Terhubung ke Google Sheets');
       } else {
         showToast('❌ ' + (json.error || 'PIN Salah!'));
       }
@@ -880,39 +910,40 @@
   async function fetchCloudData(notify = false) {
     if (!scriptUrl || !sessionPin) return;
     const statusEl = document.getElementById('syncStatus');
+    const refBtn = document.getElementById('refreshBtn');
     statusEl.textContent = '⏳ Menyinkronkan...';
+    if (refBtn) refBtn.disabled = true;
 
     try {
       const res = await fetch(`${scriptUrl}?action=get_items&role=manager&pin=${encodeURIComponent(sessionPin)}`);
       const json = await res.json();
       if (json.ok) {
-        appConfig = json.config || appConfig;
-        itemsData = json.items || [];
-        logsData = json.logs || [];
-        applyBrandingUI();
-        renderAll();
-        statusEl.textContent = '🟢 Sheets Live (' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ')';
-        if (notify) showToast('🔄 Data terbaru berhasil dimuat');
+        applyServerState(json);
+        if (notify) showToast('🔄 Data terbaru dimuat');
       } else {
         statusEl.textContent = '🔴 Error Auth';
       }
     } catch (e) {
       statusEl.textContent = '🟡 Offline';
       if (notify) showToast('⚠️ Gagal menyinkronkan data');
+    } finally {
+      if (refBtn) refBtn.disabled = false;
     }
   }
 
   async function postToSheets(payload) {
-    if (!scriptUrl) {
-      alert('URL Web App Google Apps Script belum diisi.');
-      return { ok: false };
-    }
+    const statusEl = document.getElementById('syncStatus');
+    statusEl.textContent = '⏳ Menyimpan...';
     const res = await fetch(scriptUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ ...payload, pin: sessionPin })
     });
-    return await res.json();
+    const json = await res.json();
+    if (json.ok && json.items) {
+      applyServerState(json);
+    }
+    return json;
   }
 
   function switchTab(name, btn) {
@@ -1021,7 +1052,6 @@
 
   async function managerOverrideCount(sku, val) {
     if (val === '') return;
-    showToast('⏳ Menyimpan koreksi ke Sheets...');
     const res = await postToSheets({
       action: 'submit_count',
       sku,
@@ -1030,8 +1060,7 @@
       note: 'Koreksi Audit Manager'
     });
     if (res.ok) {
-      await fetchCloudData(false);
-      showToast('✅ Koreksi tersimpan di Google Sheets');
+      showToast('✅ Koreksi tersimpan');
     } else {
       alert('Gagal menyimpan: ' + (res.error || 'Unknown error'));
     }
@@ -1057,7 +1086,6 @@
       witnessSel.appendChild(opt);
     });
 
-    // Auto-select most frequent auditor in current session if available
     const auditors = itemsData.map(i => i.auditor).filter(a => a && !a.startsWith('Manager'));
     if (auditors.length > 0) {
       const topAuditor = auditors[0];
@@ -1093,7 +1121,6 @@
     const fullDateStr = `${now.getDate()} ${monthsId[now.getMonth()]} ${now.getFullYear()}`;
     const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
 
-    // Filter base items by active zone filter
     const zoneItems = itemsData.filter(i => zFilter === 'ALL' || i.zone === zFilter);
     const countedItems = zoneItems.filter(i => i.physStock !== null && i.physStock !== undefined);
 
@@ -1244,7 +1271,7 @@
     setTimeout(() => document.body.classList.remove('print-qr'), 500);
   }
 
-  // Photo Compression
+  // Kompresi foto ringan (160px, quality 0.55) untuk upload cepat
   function handlePhotoUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -1253,7 +1280,7 @@
     reader.onload = function(e) {
       const img = new Image();
       img.onload = function() {
-        const MAX_SIZE = 220;
+        const MAX_SIZE = 160;
         let w = img.width;
         let h = img.height;
         if (w > h) {
@@ -1266,7 +1293,7 @@
         canvas.height = h;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, w, h);
-        currentPhotoBase64 = canvas.toDataURL('image/jpeg', 0.65);
+        currentPhotoBase64 = canvas.toDataURL('image/jpeg', 0.55);
         keepExistingPhotoFlag = false;
 
         const prev = document.getElementById('photoPreviewImg');
@@ -1319,8 +1346,7 @@
 
     if (res.ok) {
       resetMasterForm();
-      await fetchCloudData(false);
-      showToast(`💾 SKU ${item.sku} tersimpan di Google Sheets`);
+      showToast(`💾 SKU ${item.sku} tersimpan`);
     } else {
       alert('Gagal menyimpan: ' + (res.error || 'Error'));
     }
@@ -1357,8 +1383,7 @@
 
     if (res.ok) {
       document.getElementById('bulkText').value = '';
-      await fetchCloudData(false);
-      showToast(`📥 ${items.length} SKU berhasil diunggah ke Sheets!`);
+      showToast(`📥 ${items.length} SKU berhasil diunggah!`);
     }
   }
 
@@ -1417,7 +1442,6 @@
     if (!confirm(`Hapus ${sku} dari Google Sheets?`)) return;
     const res = await postToSheets({ action: 'delete_item', sku });
     if (res.ok) {
-      await fetchCloudData(false);
       showToast(`🗑️ ${sku} dihapus`);
     }
   }
@@ -1426,17 +1450,15 @@
     if (!confirm('Perbarui seluruh Stok Sistem di Google Sheets mengikuti hasil Hitung Fisik saat ini?')) return;
     const res = await postToSheets({ action: 'sync_sys_stock' });
     if (res.ok) {
-      await fetchCloudData(false);
-      showToast('🔄 Stok Sistem diperbarui di Sheets');
+      showToast('🔄 Stok Sistem diperbarui');
     }
   }
 
   async function resetAllCounts() {
-    if (!confirm('Kosongkan seluruh kolom Stok Fisik di Google Sheets untuk memulai sesi Stock Opname baru?')) return;
+    if (!confirm('Kosongkan seluruh kolom Stok Fisik DAN Riwayat Log SO di Google Sheets untuk memulai sesi Stock Opname baru?')) return;
     const res = await postToSheets({ action: 'reset_counts' });
     if (res.ok) {
-      await fetchCloudData(false);
-      showToast('🧹 Sesi audit direset');
+      showToast('🧹 Sesi audit & riwayat log berhasil direset');
     }
   }
 
@@ -1461,7 +1483,6 @@
     if (res.ok) {
       if (res.pin) sessionPin = res.pin;
       document.getElementById('cfgNewPin').value = '';
-      await fetchCloudData(false);
       showToast('✅ Profil KDKMP & daftar tim tersimpan!');
     } else {
       alert(res.error || 'Gagal menyimpan pengaturan');
@@ -1518,11 +1539,12 @@
     a.click();
     URL.revokeObjectURL(url);
   }
- function showToast(msg) {
+
+  function showToast(msg) {
     const t = document.getElementById('toast');
     t.textContent = msg;
     t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 2500);
+    setTimeout(() => t.classList.remove('show'), 2200);
   }
 
   function escapeHtml(s) {
